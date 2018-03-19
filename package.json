@@ -1,0 +1,30 @@
+{
+  "name": "gql-ts",
+  "version": "1.0.0",
+  "description": "GraphQL implementation in typescript",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "ts-node ./src/index.ts",
+    "prepublishOnly": "tsc -p ./ --outDir dist/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lesslucifer/gql-ts.git"
+  },
+  "keywords": [
+    "graphql",
+    "ts",
+    "typescript"
+  ],
+  "author": "VuLQ",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lesslucifer/gql-ts/issues"
+  },
+  "homepage": "https://github.com/lesslucifer/gql-ts#readme",
+  "dependencies": {
+    "@types/node": "^9.4.7",
+    "reflect-metadata": "^0.1.12"
+  }
+}
