@@ -1,9 +1,17 @@
 import { GQLBaseType, GQLType } from "./declare";
-import { IGQLObjectDefine, GQLObject } from "./index";
+import { IGQLObjectDefine, GQLObject, GQLQuery } from "./index";
 import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined, isFunction } from "util";
 import { GQLModelKeySpec, GQLModel, GQL } from "./model";
+import { GQLSelect } from "./select";
+import { GQLFieldFilter, GQLFilter } from "./filter";
+
+export class GQLUnauthorizedQuery extends Error {
+
+}
 
 export class GQLUtils {
+    Parsers = [this._gqlParse]
+
     gqlTypeFromDesignType(type: any): GQLType {
         if (type === String) {
             return GQLBaseType.STRING;
@@ -49,7 +57,7 @@ export class GQLUtils {
                 ((obj instanceof Object) && Object.keys(obj).length == 0));
     }
 
-    notEmpty(data: any, isEmpty: (any)  => boolean = this.isEmpty, deep = true) {
+    notEmpty(data: any, isEmpty: (any)  => boolean = this.isEmpty, deep = false) {
         if (isArray(data)) {
             const filteredData = data.filter(d => !isEmpty(d));
             if (deep) {
@@ -115,7 +123,7 @@ export class GQLUtils {
         return null;
     }
 
-    gqlParse(gql: GQL, spec: GQLModelKeySpec, value: any) {
+    private _gqlParse(gql: GQL, spec: GQLModelKeySpec, value: any) {
         if (!spec) {
             return undefined;
         }
@@ -154,6 +162,17 @@ export class GQLUtils {
         return undefined;
     }
 
+    gqlParse(gql: GQL, spec: GQLModelKeySpec, value: any) {
+        for (const p of this.Parsers) {
+            const val = p.apply(this, [gql, spec, value]);
+            if (val !== undefined) {
+                return val;
+            }
+        }
+
+        return undefined;
+    }
+
     select<T>(...args: T[]): T {
         for (const arg of args) {
             if (!this.isEmpty(arg)) {
@@ -162,6 +181,34 @@ export class GQLUtils {
         }
 
         return undefined;
+    }
+
+    whiteListSelect(query: GQLQuery, ...whiteList: string[]) {
+        const invalidField = query.select.fields.find(f => whiteList.find(wq => wq == f.field) == null)
+        if (invalidField != null) {
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+        }
+    }
+
+    blackListSelect(query: GQLQuery, ...blackList: string[]) {
+        const invalidField = query.select.fields.find(f => blackList.find(wq => wq == f.field) != null)
+        if (invalidField != null) {
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+        }
+    }
+
+    whiteListFilter(query: GQLQuery, ...whiteList: string[]) {
+        const invalidField = query.filter.filters.find(f => whiteList.find(wq => wq == f.field) == null)
+        if (invalidField != null) {
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot filter field (${invalidField.field})!`)
+        }
+    }
+    
+    blackListFilter(query: GQLQuery, ...blackList: string[]) {
+        const invalidField = query.filter.filters.find(f => blackList.find(wq => wq == f.field) != null)
+        if (invalidField != null) {
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import { GQLQuery, IGQLFieldOptions, IGQLResolverDefine } from "./index";
 import { GQLType, IGQLResolverDataModel } from "./declare";
 import { isFunction, isPrimitive } from "util";
 import { GQLU } from "./utils";
+import * as _ from 'lodash';
+import { GQLSelect } from "./select";
 
 export interface IGQLModelClass<M = any> {
     gql?: GQL;
@@ -11,6 +13,8 @@ export interface IGQLModelClass<M = any> {
     new(): M;
 
     resolve(query: GQLQuery): Promise<M[]>;
+
+    DefaultSelect?: any;
 }
 
 export class GQLModel<T, M> {
@@ -30,11 +34,11 @@ export class GQLModel<T, M> {
     //     return bookers;
     // }
 
-    static async gqlMapping<T, M>(data: T[], query: GQLQuery): Promise<M[]> {
+    static async gqlMapping<M>(data: any[], query: GQLQuery): Promise<M[]> {
         const gql = query.gql;
         const spec = gql.get<M>(this);
         
-        const modelData: IGQLResolverDataModel<T, M>[] = data.map(d => ({data: d, model: new spec.model()}));
+        const modelData: IGQLResolverDataModel<any, M>[] = data.map(d => ({data: d, model: new spec.model()}));
         for (const select of query.select.fields) {
             const keySpec = spec.keys.find(k => k.key == select.field);
             if (!keySpec) {
@@ -114,6 +118,24 @@ export class GQL {
         })
         spec.resolvers = Reflect.getMetadata('gql:resolvers', m) || [];
         this._models.push(spec);
+    }
+
+    queryFromHttpQuery(query: any, type?: IGQLModelClass<any>) {
+        const data: any = {};
+        
+        const fields: string[] = query.$fields && query.$fields.split(',');
+        fields && fields.forEach(f => _.set(data, f, true));
+        
+        const filterKeys = _.keys(query).filter(f => !f.startsWith('$'));
+        data.$query = {};
+        filterKeys.map(k => _.set(data.$query, k, query[k]));
+
+        if (!type) {
+            data.$type = query.$type;
+        }
+
+        const q = new GQLQuery(this, type, data);
+        return q;
     }
 }
 

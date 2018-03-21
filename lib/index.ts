@@ -17,7 +17,8 @@ export class GQLQuery {
         this.target = (args.length >= 3) ? args[1] : this.gql.get(data.$type).model;
         
         this.filter = new GQLFilter(data.$query)
-        this.select = new GQLSelect(this.gql, this.target, GQLU.filterObj(data, k => !k.startsWith('$')));
+        const selectData = GQLU.select(GQLU.filterObj(data, k => !k.startsWith('$')), this.target.DefaultSelect);
+        this.select = new GQLSelect(this.gql, this.target, selectData);
     }
 
     resolve<T = any>() {

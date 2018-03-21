@@ -11,7 +11,7 @@ export class GQLFieldSelect {
 
         const keySpec = gql.get(target).getKey(field)
         if (!keySpec) {
-            throw Error(`Invalid select! Field ${field} is not defined`);
+            throw Error(`Invalid select! Field (${field}) is not defined`);
         }
         this.spec = keySpec;
 
