@@ -132,29 +132,29 @@ export class GQLUtils {
             return value;
         }
 
-        if (spec.type === GQLBaseType.BOOL) {
+        if (spec.rawType === GQLBaseType.BOOL) {
             return this.toBoolean(value);
         }
 
-        if (spec.type === GQLBaseType.DOUBLE) {
+        if (spec.rawType === GQLBaseType.DOUBLE) {
             const x = parseFloat(value);
             return isNaN(x) ? null : x;
         }
 
-        if (spec.type === GQLBaseType.INT) {
+        if (spec.rawType === GQLBaseType.INT) {
             const n = parseInt(value);
             return isNaN(n) ? null : n;
         }
 
-        if (spec.type === GQLBaseType.STRING) {
+        if (spec.rawType === GQLBaseType.STRING) {
             return this.toString(value);
         }
 
-        if (spec.type == Object) {
+        if (spec.rawType == Object) {
             // TODO: handle for case nested object
         }
 
-        if (spec.type == Array) {
+        if (spec.rawType == Array) {
             // TODO: handle for case array
         }
 
@@ -209,6 +209,21 @@ export class GQLUtils {
         if (invalidField != null) {
             throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
         }
+    }
+
+    nonenumerable(target: Object, key: string) {
+        Object.defineProperty(target, key, {
+            get: function () { return undefined; },
+            set: function (this: any, val: any) {
+                Object.defineProperty(this, key, {
+                    value: val,
+                    writable: true,
+                    enumerable: false,
+                    configurable: true,
+                });
+            },
+            enumerable: false,
+        });
     }
 }
 

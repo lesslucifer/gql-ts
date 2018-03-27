@@ -1,4 +1,4 @@
-import { isObject } from 'lodash';
+import { isObject, includes } from 'lodash';
 import { GQLType } from "./declare";
 import { GQLQuery, IGQLFieldOptions } from "./index";
 import { GQL, GQLModelKeySpec, IGQLModelClass } from './model';
@@ -16,7 +16,7 @@ export class GQLFieldSelect {
         this.spec = keySpec;
 
         // TODO
-        this.type = keySpec.type;
+        this.type = keySpec.trueType;
         if (isObject(data)) {
             this.subQuery = new GQLQuery(this.gql, this.type, data);
             return
@@ -43,6 +43,7 @@ export class GQLSelect {
     readonly gql: GQL;
     readonly target: Function;
     readonly fields: GQLFieldSelect[];
+    readonly rawFields: string[] = [];
 
     constructor(gql: GQL, target: Function, data: Object)  {
         this.gql = gql;
@@ -59,10 +60,20 @@ export class GQLSelect {
     get(field: string) {
         return this.fields.find(f => f.field == field);
     }
+    
+    add(...fields: string[]) {
+        for (const f of fields) {
+            if (this.fields.find(ff => ff.field == f) == null) {
+                this.fields.push(new GQLFieldSelect(this.gql, this.target, f, true));
+            }
+        }
+    }
 
-    static selectAll(model: IGQLModelClass): GQLSelect {
-        const select = new GQLSelect(model.gql, model, {});
-        model.spec.keys.forEach(k => select.fields.push(new GQLFieldSelect(model.gql, model, k.key, true)));
-        return select;
+    addRawField(...fields: string[]) {
+        for (const f of fields) {
+            if (this.rawFields.find(ff => ff == f) == null) {
+                this.rawFields.push(f);
+            }
+        }
     }
 }

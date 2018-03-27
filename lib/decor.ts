@@ -1,26 +1,23 @@
 import "reflect-metadata";
-import { GQLBaseType, GQLType, IGQLResolverDataModel } from "./declare";
+import { GQLBaseType, GQLType } from "./declare";
 import { GQLU } from "./utils";
-import { IGQLModelClass } from "./model";
+import { IGQLModelClass, GQLResolverSpec, IGQLResolverOptions, IGQLMapperOptions, IGQLMapper, GQLMapperSpec } from "./model";
 import { GQLQuery } from "./index";
 import { GQLFieldFilter } from "./filter";
 import * as _ from 'lodash';
 
+export type IGQLFieldGeneric = GQLType | {[field: string]: IGQLFieldGeneric};
+
 export interface IGQLFieldOptions {
     type?: GQLType;
-    name?: string;
+    dataName?: string;
     tags?: string[];
-    generic?: GQLType;
+    generic?: IGQLFieldGeneric;
 }
 
 export interface IGQLObjectDefine {
     name: string;
     type: Object;
-}
-
-export interface IGQLResolverDefine {
-    name: string;
-    resolve: Function;
 }
 
 export function GQLObject(name: string) {
@@ -36,8 +33,8 @@ export function GQLField(options?: IGQLFieldOptions) {
     options = options || {};
     return (target: any, key: string) => {
         const type = options.type || GQLU.gqlTypeFromDesignType(Reflect.getMetadata('design:type', target, key));
-        const name = options.name || key;
-        Reflect.defineMetadata(`gql:name`, name, target, key);
+        const name = options.dataName || key;
+        Reflect.defineMetadata(`gql:dataName`, name, target, key);
         Reflect.defineMetadata(`gql:key`, key, target, key);
         Reflect.defineMetadata(`gql:type`, type, target, key);
         Reflect.defineMetadata(`gql:options`, options, target, key);
@@ -47,58 +44,31 @@ export function GQLField(options?: IGQLFieldOptions) {
     }
 }
 
-export function GQLRootResolver() {
-    return GQLResolver('__root');
-}
-
-function defineResolver(target: any, name: string, resolveFunc: any) {
-    const resolvers: IGQLResolverDefine[] = Reflect.getMetadata(`gql:resolvers`, target) || [];
-    resolvers.push({
-        name: name,
-        resolve: resolveFunc
-    });
+function defineResolver(target: any, opts: IGQLResolverOptions, resolveFunc: any) {
+    const resolvers: GQLResolverSpec<any>[] = Reflect.getMetadata(`gql:resolvers`, target) || [];
+    opts.priority = opts.priority || 0;
+    resolvers.push(new GQLResolverSpec(resolveFunc, opts));
     Reflect.defineMetadata(`gql:resolvers`, resolvers, target);
 }
 
-export function GQLResolver(field: string) {
+export function GQLResolver(opts: IGQLResolverOptions) {
     return (target: any, key: string, desc: PropertyDescriptor) => {
-        defineResolver(target, field, desc.value);
+        defineResolver(target, opts, desc.value);
     }
 }
 
-export interface IGQLMappingResolverOptions {
-    refKey?: string;
-    targetKey?: string;
-    refCollectors?: (dataModel: IGQLResolverDataModel<any, any>[]) => any;
-    targetClass?: IGQLModelClass;
+export function GQLRootResolver() {
+    return GQLResolver({priority: 0});
 }
 
-// function resolveTypeForKey(model: IGQLModelClass, key: string): IGQLModelClass {
-//     const keySpec = model.spec.getKey(key);
-//     if (!keySpec) return null;
+function defineMapper(target: any, opts: IGQLMapperOptions, mappingFunc: any) {
+    const mappers: GQLMapperSpec<any, any>[] = Reflect.getMetadata(`gql:mappers`, target) || [];
+    mappers.push(new GQLMapperSpec(mappingFunc, opts || {fields: []}));
+    Reflect.defineMetadata(`gql:mappers`, mappers, target);
+}
 
-//     return <any> (keySpec.type || keySpec.options.generic);
-// }
-
-export function GQLMappingResolver(opts?: IGQLMappingResolverOptions) {
-    opts = opts || {};
-    return (target: any, key: string) => {
-        const model: IGQLModelClass = target.constructor;
-        const refKey = opts.refKey || key;
-        const targetKey = opts.targetKey || 'id';
-        
-        const resolver = async (dataModel: IGQLResolverDataModel<any, any>[], query: GQLQuery) => {
-            const refCollector = opts.refCollectors || ((dataModel) => _.uniq(dataModel.map(dm => dm.data[refKey])));
-
-            const targetQuery = query.select.get(refKey).subQuery;
-            if (!targetQuery) return;
-            targetQuery.filter.add(new GQLFieldFilter(targetKey, refCollector(dataModel)));
-            const targets = await targetQuery.resolve();
-            const targetDict = _.groupBy(targets, targetKey);
-            const map = model.spec.getKey(refKey).type == Array ? _.identity : _.first;
-            dataModel.forEach(dm => dm.model[key] = map(targetDict[dm.data[refKey]]) || null);
-        }
-
-        defineResolver(model, key, resolver);
+export function GQLMapper(opts?: IGQLMapperOptions) {
+    return (target: any, key: string, desc: PropertyDescriptor) => {
+        defineMapper(target, opts, desc.value);
     }
 }
