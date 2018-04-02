@@ -5,6 +5,8 @@ import { GQLType } from "./declare";
 import { GQLU } from "./utils";
 import { GQLSelect } from "./select";
 import { GQL, IGQLModelClass } from "./model";
+import { GQLSort } from "./sort";
+import { GQLPagination } from "./pagination";
 
 export * from './decor';
 
@@ -19,6 +21,9 @@ export class GQLQuery {
         this.filter = new GQLFilter(data.$query)
         const selectData = GQLU.select(GQLU.filterObj(data, k => !k.startsWith('$')), this.target.DefaultSelect);
         this.select = new GQLSelect(this.gql, this.target, selectData);
+        this.sort = new GQLSort(this.gql, this.target, data.$sort);
+        this.paginationFrom = new GQLPagination(this.gql, this.target, data.$from);
+        this.paginationTo = new GQLPagination(this.gql, this.target, data.$to);
     }
 
     resolve<T = any>() {
@@ -38,4 +43,7 @@ export class GQLQuery {
     readonly target: IGQLModelClass<any, any>;
     readonly filter: GQLFilter;
     readonly select: GQLSelect;
+    readonly sort: GQLSort;
+    readonly paginationFrom: GQLPagination;
+    readonly paginationTo: GQLPagination;
 }

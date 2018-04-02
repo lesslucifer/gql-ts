@@ -72,3 +72,16 @@ export function GQLMapper(opts?: IGQLMapperOptions) {
         defineMapper(target, opts, desc.value);
     }
 }
+
+export function GQLIdenticalMapping(dataName?: string) {
+    return (target: any, key: string) => {
+        const rawKey = dataName || key;
+        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery, models: any[]) => {
+            models.forEach(m => {
+                m[key] = m.raw[rawKey];
+            });
+
+            return models;
+        });
+    }
+}

@@ -27,7 +27,7 @@ export class GQLResolverSpec<T> {
     }
 
     isMatch(filter: GQLFilter) {
-        return !this.opts.fields || _.intersection(filter.filters.map(f => f.field), this.opts.fields);
+        return !this.opts.fields || _.intersection(filter.filters.map(f => f.field), this.opts.fields).length > 0;
     }
 }
 
@@ -205,7 +205,35 @@ export class GQL {
         
         const filterKeys = _.keys(query).filter(f => !f.startsWith('$'));
         data.$query = {};
-        filterKeys.map(k => _.set(data.$query, k, query[k]));
+        filterKeys.map(k => _.set(data.$query, k, query[k].split(',')));
+
+        const sortData: string[] = query.$sort && query.$sort.split(',');
+        data.$sort = sortData.map(sd => {
+            const fieldData = sd.split(':');
+            if (fieldData.length == 2) {
+                return {field: sd[0], order: sd[1]}
+            }
+
+            return undefined;
+        }).filter(sd => sd != null);
+        
+        const fromData: string[] = query.$from && query.$from.split(',');
+        data.$from = {};
+        fromData.forEach(fd => {
+            const fieldData = fd.split(':');
+            if (fieldData.length == 2) {
+                data.$from[fd[0]] = fd[1];
+            };
+        });
+
+        const toData: string[] = query.$to && query.$to.split(',');
+        data.$to = {};
+        toData.forEach(fd => {
+            const fieldData = fd.split(':');
+            if (fieldData.length == 2) {
+                data.$to[fd[0]] = fd[1];
+            };
+        })
 
         if (!type) {
             data.$type = query.$type;
