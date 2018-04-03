@@ -211,7 +211,7 @@ export class GQL {
         data.$sort = sortData.map(sd => {
             const fieldData = sd.split(':');
             if (fieldData.length == 2) {
-                return {field: sd[0], order: sd[1]}
+                return {field: fieldData[0], order: fieldData[1]}
             }
 
             return undefined;
@@ -222,7 +222,7 @@ export class GQL {
         fromData.forEach(fd => {
             const fieldData = fd.split(':');
             if (fieldData.length == 2) {
-                data.$from[fd[0]] = fd[1];
+                data.$from[fieldData[0]] = fieldData[1];
             };
         });
 
@@ -231,7 +231,7 @@ export class GQL {
         toData.forEach(fd => {
             const fieldData = fd.split(':');
             if (fieldData.length == 2) {
-                data.$to[fd[0]] = fd[1];
+                data.$to[fieldData[0]] = fieldData[1];
             };
         })
 
