@@ -22,8 +22,7 @@ export class GQLQuery {
         const selectData = GQLU.select(GQLU.filterObj(data, k => !k.startsWith('$')), this.target.DefaultSelect);
         this.select = new GQLSelect(this.gql, this.target, selectData);
         this.sort = new GQLSort(this.gql, this.target, data.$sort);
-        this.paginationFrom = new GQLPagination(this.gql, this.target, data.$from);
-        this.paginationTo = new GQLPagination(this.gql, this.target, data.$to);
+        this.pagination = new GQLPagination(data.$from, data.$to, data.$limit);
     }
 
     resolve<T = any>() {
@@ -44,6 +43,5 @@ export class GQLQuery {
     readonly filter: GQLFilter;
     readonly select: GQLSelect;
     readonly sort: GQLSort;
-    readonly paginationFrom: GQLPagination;
-    readonly paginationTo: GQLPagination;
+    readonly pagination: GQLPagination;
 }

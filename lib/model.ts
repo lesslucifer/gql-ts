@@ -207,7 +207,7 @@ export class GQL {
         data.$query = {};
         filterKeys.map(k => _.set(data.$query, k, query[k].split(',')));
 
-        const sortData: string[] = query.$sort && query.$sort.split(',');
+        const sortData: string[] = (query.$sort && query.$sort.split(',')) || [];
         data.$sort = sortData.map(sd => {
             const fieldData = sd.split(':');
             if (fieldData.length == 2) {
@@ -217,7 +217,7 @@ export class GQL {
             return undefined;
         }).filter(sd => sd != null);
         
-        const fromData: string[] = query.$from && query.$from.split(',');
+        const fromData: string[] = (query.$from && query.$from.split(',')) || [];
         data.$from = {};
         fromData.forEach(fd => {
             const fieldData = fd.split(':');
@@ -226,7 +226,7 @@ export class GQL {
             };
         });
 
-        const toData: string[] = query.$to && query.$to.split(',');
+        const toData: string[] = (query.$to && query.$to.split(',')) || [];
         data.$to = {};
         toData.forEach(fd => {
             const fieldData = fd.split(':');
@@ -234,6 +234,8 @@ export class GQL {
                 data.$to[fd[0]] = fd[1];
             };
         })
+
+        data.$limit = GQLU.parseIntNull(query.$limit);
 
         if (!type) {
             data.$type = query.$type;

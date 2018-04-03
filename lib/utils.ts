@@ -225,6 +225,15 @@ export class GQLUtils {
             enumerable: false,
         });
     }
+
+    parseIntNull(v?: any) {
+        const n = parseInt(v);
+        if (isNaN(n)) {
+            return null;
+        }
+
+        return n;
+    }
 }
 
 export const GQLU = new GQLUtils;

@@ -3,21 +3,18 @@ import { GQLType } from "./declare";
 import { GQLQuery, IGQLFieldOptions } from "./index";
 import { GQL, GQLModelKeySpec, IGQLModelClass } from './model';
 
-export type GQLSortOrder = 'ASC' | 'DESC';
+export type GQLOffsetData = {[field: string]: any};
+export interface IGQLOffset {
+}
 
-export type GQLPaginationData = {[field: string]: any};
 export class GQLPagination {
-    readonly gql: GQL;
-    readonly target: Function;
-    readonly fields: GQLPaginationData;
+    from?: GQLOffsetData;
+    to?: GQLOffsetData;
+    limit?: number;
 
-    constructor(gql: GQL, target: Function, fields: GQLPaginationData)  {
-        this.gql = gql;
-        this.target = target;
-        this.fields = fields;
-    }
-
-    addField(field: string, val: any) {
-        this.fields[field] = val;
+    constructor(from: GQLOffsetData, to?: GQLOffsetData, limit?: number) {
+        this.from = from;
+        this.to = to;
+        this.limit = limit;
     }
 }
