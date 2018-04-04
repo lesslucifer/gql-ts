@@ -27,7 +27,7 @@ export class GQLSort {
     constructor(gql: GQL, target: Function, fields: any[])  {
         this.gql = gql;
         this.target = target;
-        this.fields = fields.map(f => new GQLSortField(f.field, f.order));
+        this.fields = (fields || []).map(f => new GQLSortField(f.field, f.order));
     }
 
     addField(field: string, order: GQLSortOrder) {
