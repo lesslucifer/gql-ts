@@ -5,11 +5,12 @@ import { IGQLModelClass, GQLResolverSpec, IGQLResolverOptions, IGQLMapperOptions
 import { GQLQuery } from "./index";
 import { GQLFieldFilter } from "./filter";
 import * as _ from 'lodash';
+import { AssertionError } from "assert";
 
 export type IGQLFieldGeneric = GQLType | {[field: string]: IGQLFieldGeneric};
 
 export interface IGQLFieldOptions {
-    type?: GQLType;
+    type?: () => GQLType;
     dataName?: string;
     tags?: string[];
     generic?: IGQLFieldGeneric;
@@ -32,7 +33,9 @@ export function GQLObject(name: string) {
 export function GQLField(options?: IGQLFieldOptions) {
     options = options || {};
     return (target: any, key: string) => {
-        const type = options.type || GQLU.gqlTypeFromDesignType(Reflect.getMetadata('design:type', target, key));
+        const type = options.type || (() => GQLU.gqlTypeFromDesignType(Reflect.getMetadata('design:type', target, key)));
+        GQLU.assert(type != null, `${target}: Cannot get type for key ${key}! Try use Functional type`);
+
         const name = options.dataName || key;
         Reflect.defineMetadata(`gql:dataName`, name, target, key);
         Reflect.defineMetadata(`gql:key`, key, target, key);
@@ -81,6 +84,47 @@ export function GQLIdenticalMapping(dataName?: string) {
                 m[key] = m.raw[rawKey];
             });
 
+            return models;
+        });
+    }
+}
+
+export interface IGQLFieldRevMappingOpts<M1, M2> {
+    targetType?: IGQLModelClass<any, any>
+    queryField?: string;
+    extractor?: (model: M1) => any;
+    extractField?: string;
+    rawField?: string;
+    mappingFunc?: (model: M1, targets: M2[]) => any;
+    mappingFilter?: (model: M1, target: M2) => boolean;
+}
+
+export function GQLFieldRevMapping(opts?: IGQLFieldRevMappingOpts<any, any>) {
+    opts = opts || {};
+    return (target: any, key: string) => {
+        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery, models: any[]) => {
+            const spec = query.gql.get(target.constructor);
+            const field = key;
+            const fieldSpec = spec.getKey(field);
+            const targetType: IGQLModelClass<any, any> = opts.targetType || <any> fieldSpec.trueType;
+            const queryField = opts.queryField || field;
+            const extractField   = opts.extractField || field;
+            const extractor = opts.extractor || (m => m[extractField]);
+            const rawField = opts.rawField || field;
+            const mappingFilter = opts.mappingFilter || ((m, t) => m[extractField] == t.raw[rawField])
+            const mappingFunc = opts.mappingFunc || (
+                (fieldSpec.rawType == Array) ? 
+                ((m, tgs: any[]) => m[field] = tgs.filter(t => mappingFilter(m, t))) : 
+                ((m, tgs: any[]) => m[field] = tgs.find(t => mappingFilter(m, t))));
+
+            const select = query.select.get(field);
+            const subQuery = select.subQuery || query.emptyQuery(targetType);
+            subQuery.filter.add(new GQLFieldFilter(queryField, models.map(m => extractor(m))));
+            subQuery.select.addRawField(rawField);
+    
+            const targetModels = await subQuery.resolve();
+            
+            models.forEach(m => mappingFunc(m, targetModels));
             return models;
         });
     }

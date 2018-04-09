@@ -139,17 +139,28 @@ export class GQLModel<T, M> {
 }
 
 export class GQLModelKeySpec {
+    private __rawType: GQLType = null;
+
     dataName: string;
     key: string;
-    rawType: GQLType;
+    _rawType: () => GQLType;
     options: IGQLFieldOptions;
 
+    get rawType() {
+        if (!this.__rawType) {
+            this.__rawType = this._rawType()
+        }
+
+        return this.__rawType;
+    }
+
     get trueType(): GQLType {
-        if (this.rawType == Array || this.rawType == Object) {
+        const raw = this.rawType;
+        if (raw == Array || raw == Object) {
             return this.options.generic as GQLType;
         }
         
-        return this.rawType;
+        return raw;
     }
 }
 
@@ -187,7 +198,7 @@ export class GQL {
             const keySpec = new GQLModelKeySpec();
             keySpec.dataName = Reflect.getMetadata('gql:dataName', m.prototype, k);
             keySpec.key = Reflect.getMetadata('gql:key', m.prototype, k);
-            keySpec.rawType = Reflect.getMetadata('gql:type', m.prototype, k);
+            keySpec._rawType = Reflect.getMetadata('gql:type', m.prototype, k);
             keySpec.options = Reflect.getMetadata('gql:options', m.prototype, k);
             return keySpec;
         })

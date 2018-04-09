@@ -4,6 +4,7 @@ import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined, is
 import { GQLModelKeySpec, GQLModel, GQL } from "./model";
 import { GQLSelect } from "./select";
 import { GQLFieldFilter, GQLFilter } from "./filter";
+import { AssertionError } from "assert";
 
 export class GQLUnauthorizedQuery extends Error {
 
@@ -11,6 +12,12 @@ export class GQLUnauthorizedQuery extends Error {
 
 export class GQLUtils {
     Parsers = [this._gqlParse]
+
+    assert(mustBeTrue, msg = "Error") {
+        if (!mustBeTrue) {
+            throw new AssertionError({message: msg});
+        }
+    }
 
     gqlTypeFromDesignType(type: any): GQLType {
         if (type === String) {

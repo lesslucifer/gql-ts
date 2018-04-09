@@ -49,7 +49,7 @@ export class GQLSelect {
         this.gql = gql;
         this.target = target;
         this.fields = [];
-        for (const f of Object.keys(data)) {
+        for (const f of Object.keys(data || {})) {
             const fieldData = data[f];
             if (fieldData) {
                 this.fields.push(new GQLFieldSelect(this.gql, target, f, data[f]));
