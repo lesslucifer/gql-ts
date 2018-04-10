@@ -127,7 +127,7 @@ export class GQLModel<T, M> {
             }
 
             models.forEach(md => {
-                const raw = GQLU.gqlParse(gql, keySpec, md.raw[keySpec.dataName]);
+                const raw = md.raw && GQLU.gqlParse(gql, keySpec, md.raw[keySpec.dataName]);
                 if (raw !== undefined) {
                     md[keySpec.key] = raw;
                 }
