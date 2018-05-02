@@ -14,7 +14,8 @@ export interface IGQLResolver<T>{
 
 export interface IGQLResolverOptions {
     priority?: number;
-    fields?: string[];
+    // fields?: string[];
+    matches?: (filter: GQLFilter) => boolean;
 }
 
 export class GQLResolverSpec<T> {
@@ -27,7 +28,7 @@ export class GQLResolverSpec<T> {
     }
 
     isMatch(filter: GQLFilter) {
-        return !this.opts.fields || _.intersection(filter.filters.map(f => f.field), this.opts.fields).length > 0;
+        return !this.opts.matches || this.opts.matches(filter);
     }
 }
 

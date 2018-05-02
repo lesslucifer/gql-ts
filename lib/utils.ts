@@ -241,6 +241,23 @@ export class GQLUtils {
 
         return n;
     }
+
+    byFields(requiredFields: string[], optionalFields?: string[]) {
+        const allowedFields = new Map();
+        requiredFields.forEach(rf => allowedFields[rf] = true);
+        optionalFields && optionalFields.forEach(optf => allowedFields[optf] = true);
+        return (filter: GQLFilter) => {
+            if (requiredFields.find(rf => filter.filters.find(ft => ft.field == rf) == null)) {
+                return false;
+            }
+
+            if (filter.filters.find(ft => allowedFields[ft.field] != true)) {
+                return false;
+            }
+
+            return true;
+        }
+    }
 }
 
 export const GQLU = new GQLUtils;
