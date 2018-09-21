@@ -100,7 +100,7 @@ export class GQLUtils {
 
         if (isString(value)) {
             const s = (value as string).trim().toLowerCase();
-            return s == '' || s == 'false' || s == 'no' || s == '0';
+            return !(s == '' || s == 'false' || s == 'no' || s == '0');
         }
 
         if (isArray(value)) {
