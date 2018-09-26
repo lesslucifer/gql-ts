@@ -217,7 +217,7 @@ export class GQL {
         
         const filterKeys = _.keys(query).filter(f => !f.startsWith('$'));
         data.$query = {};
-        filterKeys.map(k => _.set(data.$query, k, query[k].split(',')));
+        filterKeys.map(k => data.$query[k] = query[k].split(','));
 
         const sortData: string[] = (query.$sort && query.$sort.split(',')) || [];
         data.$sort = sortData.map(sd => {
