@@ -38,6 +38,7 @@ export interface IGQLMapper<T, M extends GQLModel<T, M>> {
 
 export interface IGQLMapperOptions {
     fields?: string[];
+    addRawFields?: string[];
 }
 
 export class GQLMapperSpec<T, M extends GQLModel<T, M>> {
@@ -68,6 +69,19 @@ export class GQLModel<T, M> {
 
     @GQLU.nonenumerable
     raw?: T;
+
+    static async _preResolve(query: GQLQuery) {
+        const gql = this.gql;
+        const spec = gql.get(query.target);
+
+        // add raw field of mapper
+        const mappers = spec.mappers;
+        for (const mapper of mappers) {
+            if (!GQLU.isEmpty(mapper.opts.addRawFields) && mapper.isMatch(query.select)) {
+                query.select.addRawField(...mapper.opts.addRawFields);
+            }
+        }
+    }
 
     static async _resolve<T>(query: GQLQuery): Promise<T[]> {
         const gql = this.gql;
@@ -101,6 +115,7 @@ export class GQLModel<T, M> {
     }
 
     static async resolve<T = any, M extends GQLModel<T, M> = GQLModel<T, any>>(query: GQLQuery): Promise<M[]> {
+        await this._preResolve(query);
         const rawModels = await this._resolve<T>(query);
         const gql = this.gql;
         const spec = gql.get<T, M>(query.target);
