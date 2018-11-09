@@ -143,7 +143,7 @@ export class GQLModel<T, M> {
             }
 
             models.forEach(md => {
-                const raw = md.raw && GQLU.gqlParse(gql, keySpec, md.raw[keySpec.dataName]);
+                const raw = md.raw && (_.isString(keySpec.dataName)) && GQLU.gqlParse(gql, keySpec, md.raw[keySpec.dataName as string]);
                 if (raw !== undefined) {
                     md[keySpec.key] = raw;
                 }
@@ -157,7 +157,7 @@ export class GQLModel<T, M> {
 export class GQLModelKeySpec {
     private __rawType: GQLType = null;
 
-    dataName: string;
+    dataName: string | Symbol;
     key: string;
     _rawType: () => GQLType;
     options: IGQLFieldOptions;

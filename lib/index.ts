@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Dictionary, uniq } from "lodash";
 import { GQLFieldFilter, GQLFilter } from "./filter";
-import { GQLType } from "./declare";
+import { GQLType, GQL_NONE } from "./declare";
 import { GQLU } from "./utils";
 import { GQLSelect } from "./select";
 import { GQL, IGQLModelClass } from "./model";
@@ -42,7 +42,7 @@ export class GQLQuery {
 
     get QueryFields() {
         const spec = this.gql.get(this.target);
-        return uniq([...this.select.rawFields, ...this.select.fields.map(f => f.spec.dataName)]);
+        return uniq([...this.select.rawFields, ...this.select.fields.map(f => f.spec.dataName).filter(name => name != GQL_NONE)]);
     }
 
     readonly gql: GQL;

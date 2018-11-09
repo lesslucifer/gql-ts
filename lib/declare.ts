@@ -5,4 +5,6 @@ export enum GQLBaseType {
     BOOL
 }
 
+export const GQL_NONE = Symbol('gql:none');
+
 export type GQLType = GQLBaseType | Function;
