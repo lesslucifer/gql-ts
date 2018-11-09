@@ -1,1 +1,14 @@
-lib/
+node_modules
+npm-debug.log
+.travis.yml
+.gitignore
+tsconfig.json
+test
+coverage
+.nyc_output
+example
+.DS_Store
+.idea
+*.ts
+*.js.map
+!*.d.ts
