@@ -8,6 +8,13 @@ import { GQL, IGQLModelClass } from "./model";
 import { GQLSort } from "./sort";
 import { GQLPagination } from "./pagination";
 
+export * from './declare';
+export * from './utils';
+export * from './select';
+export * from './filter';
+export * from './model';
+export * from './sort';
+export * from './pagination';
 export * from './decor';
 
 export class GQLQuery {
