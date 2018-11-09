@@ -11,7 +11,7 @@ export type IGQLFieldGeneric = GQLType | {[field: string]: IGQLFieldGeneric};
 
 export interface IGQLFieldOptions {
     type?: () => GQLType;
-    dataName?: string;
+    dataName?: string | Symbol;
     tags?: string[];
     generic?: IGQLFieldGeneric;
 }
