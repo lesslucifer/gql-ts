@@ -91,7 +91,7 @@ export function GQLIdenticalMapping(dataName?: string) {
 
 export interface IGQLFieldRevMappingOpts<M1, M2> {
     targetType?: IGQLModelClass<any, any>
-    queryField?: string;
+    queryField: string;
     extractor?: (model: M1) => any;
     extractField?: string;
     rawField?: string;
@@ -99,19 +99,19 @@ export interface IGQLFieldRevMappingOpts<M1, M2> {
     mappingFilter?: (model: M1, target: M2) => boolean;
 }
 
-export function GQLFieldRevMapping(opts?: IGQLFieldRevMappingOpts<any, any>) {
-    opts = opts || {};
+export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
     return (target: any, key: string) => {
         defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery, models: any[]) => {
             const spec = query.gql.get(target.constructor);
             const field = key;
             const fieldSpec = spec.getKey(field);
+            const dataName = fieldSpec.dataName;
             const targetType: IGQLModelClass<any, any> = opts.targetType || <any> fieldSpec.trueType;
-            const queryField = opts.queryField || field;
-            const extractField   = opts.extractField || field;
-            const extractor = opts.extractor || (m => m[extractField]);
-            const rawField = opts.rawField || field;
-            const mappingFilter = opts.mappingFilter || ((m, t) => m[extractField] == t.raw[rawField])
+            const queryField = opts.queryField;
+            const extractField   = opts.extractField || `raw.${dataName}`;
+            const extractor = opts.extractor || (m => _.get(m, extractField));
+            const rawField = opts.rawField || queryField;
+            const mappingFilter = opts.mappingFilter || ((m, t) => extractor(m) == _.get(t.raw, rawField))
             const mappingFunc = opts.mappingFunc || (
                 (fieldSpec.rawType == Array) ? 
                 ((m, tgs: any[]) => m[field] = tgs.filter(t => mappingFilter(m, t))) : 
