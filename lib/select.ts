@@ -50,11 +50,21 @@ export class GQLSelect {
         this.target = target;
         this.fields = [];
         for (const f of Object.keys(data || {})) {
+            if (f === '*') {
+                this.addAllFields();
+                continue;
+            }
+
             const fieldData = data[f];
             if (fieldData) {
-                this.fields.push(new GQLFieldSelect(this.gql, target, f, data[f]));
+                this.set(f, data[f], true);
             }
         }
+    }
+
+    private addAllFields() {
+        const spec = this.gql.get(this.target);
+        this.add(...spec.keys.map(k => k.key));
     }
 
     get(field: string) {
@@ -63,9 +73,23 @@ export class GQLSelect {
     
     add(...fields: string[]) {
         for (const f of fields) {
-            if (this.fields.find(ff => ff.field == f) == null) {
-                this.fields.push(new GQLFieldSelect(this.gql, this.target, f, true));
+            if (f === '*') {
+                this.addAllFields();
+                continue;
             }
+
+            this.set(f, true, false);
+        }
+    }
+
+    set(field: string, value: any, replace: boolean = true) {
+        const idx = this.fields.findIndex(ff => ff.field == field);
+        const fieldSel = new GQLFieldSelect(this.gql, this.target, field, value)
+        if (idx < 0) {
+            this.fields.push(fieldSel);
+        }
+        else if (replace == true) {
+            this.fields[idx] = fieldSel;
         }
     }
 
