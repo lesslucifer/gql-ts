@@ -1,4 +1,5 @@
 import { Dictionary, isArray } from "lodash";
+import GQLU from "./utils";
 
 export class GQLFieldFilter {
     readonly field: string;
@@ -24,6 +25,10 @@ export class GQLFieldFilter {
 
     batch<T>(): T[] {
         return this.value;
+    }
+
+    get isEmpty() {
+        return this.value.length == 0;
     }
 }
 

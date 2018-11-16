@@ -236,7 +236,7 @@ export class GQLUtils {
     }
 
     requireFilter(query: GQLQuery, ...requireds: string[]) {
-        const notFoundFilter = requireds.find(r => query.filter.get(r) == null);
+        const notFoundFilter = requireds.find(r => query.filter.get(r).isEmpty);
         if (notFoundFilter) throw new GQLUnauthorizedQuery(`Unavailable query. Must have filter (${notFoundFilter})!`)
     }
 
