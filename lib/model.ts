@@ -263,6 +263,7 @@ export class GQL {
         })
 
         data.$limit = GQLU.parseIntNull(query.$limit);
+        data.$offset = GQLU.parseIntNull(query.$offset);
 
         if (!type) {
             data.$type = query.$type;

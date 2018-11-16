@@ -11,10 +11,12 @@ export class GQLPagination {
     from?: GQLOffsetData;
     to?: GQLOffsetData;
     limit?: number;
+    offest?: number;
 
-    constructor(from: GQLOffsetData, to?: GQLOffsetData, limit?: number) {
+    constructor(from: GQLOffsetData, to?: GQLOffsetData, limit?: number, offest?: number) {
         this.from = from;
         this.to = to;
         this.limit = limit;
+        this.offest = offest;
     }
 }

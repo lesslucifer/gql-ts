@@ -190,17 +190,34 @@ export class GQLUtils {
         return undefined;
     }
 
+    recursiveSelectFields(query: GQLQuery) {
+        if (!query) return [];
+        const fields = query.select.fields.map(f => f.field);
+
+        query.select.fields.filter(f => f.subQuery != null)
+        .forEach(f => {
+            const subFields = this.recursiveSelectFields(f.subQuery);
+            if (this.isEmpty(subFields)) return;
+
+            fields.push(...subFields.map(sf => `${f.field}.${sf}`));
+        });
+
+        return fields;
+    }
+
     whiteListSelect(query: GQLQuery, ...whiteList: string[]) {
-        const invalidField = query.select.fields.find(f => whiteList.find(wq => wq == f.field) == null)
+        const selFields = this.recursiveSelectFields(query);
+        const invalidField = selFields.find(f => whiteList.find(wq => wq == f) == null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField})!`)
         }
     }
 
     blackListSelect(query: GQLQuery, ...blackList: string[]) {
-        const invalidField = query.select.fields.find(f => blackList.find(wq => wq == f.field) != null)
+        const selFields = this.recursiveSelectFields(query);
+        const invalidField = selFields.find(f => blackList.find(wq => wq == f) != null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField})!`)
         }
     }
 
@@ -214,8 +231,13 @@ export class GQLUtils {
     blackListFilter(query: GQLQuery, ...blackList: string[]) {
         const invalidField = query.filter.filters.find(f => blackList.find(wq => wq == f.field) != null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field}!)`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field})!`)
         }
+    }
+
+    requireFilter(query: GQLQuery, ...requireds: string[]) {
+        const notFoundFilter = requireds.find(r => query.filter.get(r) == null);
+        if (notFoundFilter) throw new GQLUnauthorizedQuery(`Unavailable query. Must have filter (${notFoundFilter})!`)
     }
 
     nonenumerable(target: Object, key: string) {
