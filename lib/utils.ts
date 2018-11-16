@@ -192,7 +192,7 @@ export class GQLUtils {
 
     recursiveSelectFields(query: GQLQuery) {
         if (!query) return [];
-        const fields = query.select.fields.map(f => f.field);
+        const fields = query.select.fields.filter(f => !f.subQuery).map(f => f.field);
 
         query.select.fields.filter(f => f.subQuery != null)
         .forEach(f => {

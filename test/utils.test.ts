@@ -43,7 +43,7 @@ describe("# Utils", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLModel1);
-        expect(() => GQLU.whiteListSelect(gqlQuery, 'id', 'model2.id')).to.be.ok;
+        expect(() => GQLU.whiteListSelect(gqlQuery, 'id', 'model2.id')).to.be.not.throw();
     })
 
     it('whitelist sub select ok with sub', () => {
@@ -52,7 +52,7 @@ describe("# Utils", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLModel1);
-        expect(() => GQLU.whiteListSelect(gqlQuery, 'id', 'model2.id')).to.be.ok;
+        expect(() => GQLU.whiteListSelect(gqlQuery, 'id', 'model2.id')).to.not.throw();
     })
 
     it('whitelist sub select fail with sub', () => {
