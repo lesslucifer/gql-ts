@@ -7,6 +7,7 @@ import { GQLU } from "./utils";
 import * as _ from 'lodash';
 import { GQLSelect } from "./select";
 import { GQLFilter } from "./filter";
+import { GQLMetaResolverSpec } from "./meta";
 
 export interface IGQLResolver<T>{
     (query: GQLQuery): Promise<T[]>
@@ -60,6 +61,7 @@ export interface IGQLModelClass<T, M extends GQLModel<T, M>> {
     new(): M;
 
     resolve(query: GQLQuery): Promise<M[]>;
+    meta(query: GQLQuery): Promise<any>;
 
     DefaultSelect?: any;
 }
@@ -152,6 +154,24 @@ export class GQLModel<T, M> {
 
         return models;
     }
+
+    static async meta(query: GQLQuery) {
+        const gql = this.gql;
+        const spec = gql.get(query.target);
+
+        const meta = {};
+        for (const field of query.meta.fields) {
+            const resolvers = spec.getMetaResolvers(field);
+            if (resolvers.length == 0) throw new Error(`Cannot resolve meta! Field ${field} not found`);
+            const resolver = resolvers.find(r => r.isMatch(query.filter));
+            if (resolver) {
+                const data = await resolver.resolve.apply(query.target, [query]);
+                meta[field] = data;
+            }
+        }
+        
+        return meta;
+    }
 }
 
 export class GQLModelKeySpec {
@@ -185,10 +205,15 @@ export class GQLModelSpec<T = any, M extends GQLModel<T, M> = GQLModel<T, any>> 
     model: IGQLModelClass<T, M>;
     keys: GQLModelKeySpec[];
     resolvers: GQLResolverSpec<T>[];
+    metaResolvers: GQLMetaResolverSpec[];
     mappers: GQLMapperSpec<T, M>[];
 
     getKey(name: string) {
         return this.keys.find(k => k.key == name);
+    }
+
+    getMetaResolvers(name: string) {
+        return this.metaResolvers.filter(mr => mr.opts.field == name);
     }
 
     addResolver(resolver: GQLResolverSpec<T>) {
@@ -218,9 +243,15 @@ export class GQL {
             keySpec.options = Reflect.getMetadata('gql:options', m.prototype, k);
             return keySpec;
         })
+        
         spec.resolvers = Reflect.getMetadata('gql:resolvers', m) || [];
         spec.resolvers = _.sortBy(spec.resolvers, r => r.opts.priority)
+        
         spec.mappers = [new GQLMapperSpec(GQLModel.defaultMapping, {}), ...Reflect.getMetadata('gql:mappers', m) || []];
+
+        spec.metaResolvers = Reflect.getMetadata('gql:metas', m) || [];
+        spec.metaResolvers = _.sortBy(spec.metaResolvers, r => r.opts.priority)
+
         this._models.push(spec);
     }
 
@@ -264,6 +295,8 @@ export class GQL {
 
         data.$limit = GQLU.parseIntNull(query.$limit);
         data.$offset = GQLU.parseIntNull(query.$offset);
+
+        data.$meta = (query.$meta && query.$meta.split(',')) || [];
 
         if (!type) {
             data.$type = query.$type;

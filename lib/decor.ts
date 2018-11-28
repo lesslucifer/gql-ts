@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { GQLBaseType, GQLType } from "./declare";
 import { GQLU } from "./utils";
 import { IGQLModelClass, GQLResolverSpec, IGQLResolverOptions, IGQLMapperOptions, IGQLMapper, GQLMapperSpec } from "./model";
-import { GQLQuery } from "./index";
+import { GQLQuery, IGQLMetaResolverOptions, defineMetaResolver } from "./index";
 import { GQLFieldFilter } from "./filter";
 import * as _ from 'lodash';
 import { AssertionError } from "assert";
@@ -127,5 +127,11 @@ export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
             models.forEach(m => mappingFunc(m, targetModels));
             return models;
         });
+    }
+}
+
+export function GQLMetaResolver(opts: IGQLMetaResolverOptions) {
+    return (target: any, key: string, desc: PropertyDescriptor) => {
+        defineMetaResolver(target, opts, desc.value);
     }
 }

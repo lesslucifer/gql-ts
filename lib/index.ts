@@ -7,11 +7,13 @@ import { GQLSelect } from "./select";
 import { GQL, IGQLModelClass } from "./model";
 import { GQLSort } from "./sort";
 import { GQLPagination } from "./pagination";
+import { GQLMetaSelect } from "./meta";
 
 export * from './declare';
 export * from './utils';
 export * from './select';
 export * from './filter';
+export * from './meta';
 export * from './model';
 export * from './sort';
 export * from './pagination';
@@ -30,10 +32,15 @@ export class GQLQuery {
         this.select = new GQLSelect(this.gql, this.target, selectData);
         this.sort = new GQLSort(this.gql, this.target, data.$sort);
         this.pagination = new GQLPagination(data.$from, data.$to, data.$limit, data.$offset);
+        this.meta = new GQLMetaSelect(this.gql, this.target, data.$meta);
     }
 
     resolve<T = any>() {
         return <Promise<T[]>> this.target.resolve(this);
+    }
+
+    getMeta() {
+        return this.target.meta(this);
     }
 
     emptyQuery<T = any, M = any>(type: IGQLModelClass<T, M>) {
@@ -51,4 +58,5 @@ export class GQLQuery {
     readonly select: GQLSelect;
     readonly sort: GQLSort;
     readonly pagination: GQLPagination;
+    readonly meta: GQLMetaSelect;
 }

@@ -5,6 +5,7 @@ import { GQLModelKeySpec, GQLModel, GQL } from "./model";
 import { GQLSelect } from "./select";
 import { GQLFieldFilter, GQLFilter } from "./filter";
 import { AssertionError } from "assert";
+import { ftruncate } from "fs";
 
 export class GQLUnauthorizedQuery extends Error {
 
@@ -270,6 +271,7 @@ export class GQLUtils {
         optionalFields && optionalFields.forEach(optf => allowedFields[optf] = true);
         return (filter: GQLFilter) => {
             if (requiredFields.find(rf => filter.filters.find(ft => ft.field == rf) == null)) {
+                console.log(requiredFields.find(rf => filter.filters.find(ft => ft.field == rf) == null));
                 return false;
             }
 
