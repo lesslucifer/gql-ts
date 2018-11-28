@@ -39,8 +39,12 @@ export class GQLQuery {
         return <Promise<T[]>> this.target.resolve(this);
     }
 
-    getMeta() {
+    resolveMeta() {
         return this.target.meta(this);
+    }
+
+    get hasMeta() {
+        return this.meta.fields.length > 0;
     }
 
     emptyQuery<T = any, M = any>(type: IGQLModelClass<T, M>) {

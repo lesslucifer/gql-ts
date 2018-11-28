@@ -51,7 +51,7 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        const meta = await gqlQuery.getMeta();
+        const meta = await gqlQuery.resolveMeta();
         expect(meta).include({total: 100});
     })
 
@@ -63,7 +63,7 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        await expect(gqlQuery.getMeta()).to.be.eventually.rejected;
+        await expect(gqlQuery.resolveMeta()).to.be.eventually.rejected;
     })
 
     it('get meta invalid filter should response empty', async () => {
@@ -75,6 +75,29 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        expect(await gqlQuery.getMeta()).to.eql({});
+        expect(await gqlQuery.resolveMeta()).to.eql({});
+    })
+
+    it('has meta with meta should be true', async () => {
+        const query = {
+            $fields: 'id',
+            $meta: 'total',
+            id: '0',
+            name: 'hello'
+        };
+
+        const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
+        expect(gqlQuery.hasMeta).to.be.true;
+    })
+
+    it('has meta without meta should be false', async () => {
+        const query = {
+            $fields: 'id',
+            id: '0',
+            name: 'hello'
+        };
+
+        const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
+        expect(gqlQuery.hasMeta).to.be.false;
     })
 });
