@@ -14,6 +14,8 @@ export interface IGQLFieldOptions {
     dataName?: string | Symbol;
     tags?: string[];
     generic?: IGQLFieldGeneric;
+    autoSelect?: boolean;
+    metadata?: any;
 }
 
 export interface IGQLObjectDefine {
