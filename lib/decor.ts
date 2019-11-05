@@ -119,7 +119,7 @@ export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
 
             const select = query.select.get(field);
             const subQuery = select.subQuery || query.emptyQuery(targetType);
-            subQuery.filter.add(new GQLFieldFilter(queryField, models.map(m => extractor(m))));
+            subQuery.filter.add(new GQLFieldFilter(queryField, _.flatMap(models, (m => extractor(m)))));
             subQuery.select.addRawField(rawField);
     
             const targetModels = await subQuery.resolve();
