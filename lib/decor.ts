@@ -6,6 +6,7 @@ import { GQLQuery, IGQLMetaResolverOptions, defineMetaResolver } from "./index";
 import { GQLFieldFilter } from "./filter";
 import * as _ from 'lodash';
 import { AssertionError } from "assert";
+import { GQLPagination } from "./pagination";
 
 export type IGQLFieldGeneric = GQLType | {[field: string]: IGQLFieldGeneric};
 
@@ -14,6 +15,8 @@ export interface IGQLFieldOptions {
     dataName?: string | Symbol;
     tags?: string[];
     generic?: IGQLFieldGeneric;
+    autoSelect?: boolean;
+    metadata?: any;
 }
 
 export interface IGQLObjectDefine {
@@ -121,6 +124,7 @@ export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
             const subQuery = select.subQuery || query.emptyQuery(targetType);
             subQuery.filter.add(new GQLFieldFilter(queryField, _.flatMap(models, (m => extractor(m)))));
             subQuery.select.addRawField(rawField);
+            subQuery.pagination.limit = GQLPagination.UNLIMITED;
     
             const targetModels = await subQuery.resolve();
             

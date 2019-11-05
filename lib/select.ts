@@ -1,4 +1,4 @@
-import { isObject, includes } from 'lodash';
+import { isObject, includes, isFunction } from 'lodash';
 import { GQLType } from "./declare";
 import { GQLQuery, IGQLFieldOptions } from "./index";
 import { GQL, GQLModelKeySpec, IGQLModelClass } from './model';
@@ -51,7 +51,7 @@ export class GQLSelect {
         this.fields = [];
         for (const f of Object.keys(data || {})) {
             if (f === '*') {
-                this.addAllFields();
+                this.addAllAutoSelectFields();
                 continue;
             }
 
@@ -62,9 +62,21 @@ export class GQLSelect {
         }
     }
 
-    private addAllFields() {
+    private addAllAutoSelectFields() {
         const spec = this.gql.get(this.target);
-        this.add(...spec.keys.map(k => k.key));
+        const autoSelectFields = spec.keys.filter(k => this.isAutoSelectField(k));
+        if (autoSelectFields.length > 0) {
+            this.add(...autoSelectFields.map(k => k.key));
+        }
+    }
+
+    private isAutoSelectField(spec: GQLModelKeySpec) {
+        if (!spec) return false;
+        if (spec.options && spec.options.autoSelect === true) return true;
+        if (spec.options && spec.options.autoSelect === false) return false;
+
+        if (isFunction(spec.rawType)) return false;
+        return true;
     }
 
     get(field: string) {
@@ -74,7 +86,7 @@ export class GQLSelect {
     add(...fields: string[]) {
         for (const f of fields) {
             if (f === '*') {
-                this.addAllFields();
+                this.addAllAutoSelectFields();
                 continue;
             }
 

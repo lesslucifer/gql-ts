@@ -8,6 +8,8 @@ export interface IGQLOffset {
 }
 
 export class GQLPagination {
+    static readonly UNLIMITED: number = Number.MAX_SAFE_INTEGER;
+
     from?: GQLOffsetData;
     to?: GQLOffsetData;
     limit?: number;
