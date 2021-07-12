@@ -11,3 +11,4 @@ example
 .idea
 *.ts
 !*.d.ts
+test

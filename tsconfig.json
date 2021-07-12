@@ -7,5 +7,10 @@
         "sourceMap": true,
         "outDir": "dist",
         "declaration": true
-    }
+    },
+    "exclude": [
+        "node_modules",
+        "test",
+        "dist"
+    ]
 }
