@@ -1,11 +1,10 @@
 import "reflect-metadata";
-import { GQLBaseType, GQLType } from "./declare";
+import { GQLType } from "./declare";
 import { GQLU } from "./utils";
-import { IGQLModelClass, GQLResolverSpec, IGQLResolverOptions, IGQLMapperOptions, IGQLMapper, GQLMapperSpec } from "./model";
+import { IGQLModelClass, GQLResolverSpec, IGQLResolverOptions, IGQLMapperOptions, GQLMapperSpec, IGQLObjectSchema } from "./model";
 import { GQLQuery, IGQLMetaResolverOptions, defineMetaResolver } from "./index";
 import { GQLFieldFilter } from "./filter";
 import * as _ from 'lodash';
-import { AssertionError } from "assert";
 import { GQLPagination } from "./pagination";
 
 export type IGQLFieldGeneric = GQLType | {[field: string]: IGQLFieldGeneric};
@@ -17,6 +16,10 @@ export interface IGQLFieldOptions {
     generic?: IGQLFieldGeneric;
     autoSelect?: boolean;
     metadata?: any;
+    
+    schemaRequiredFields?: boolean;
+    schema?: object;
+    extraSchema?: object;
 }
 
 export interface IGQLObjectDefine {
@@ -30,6 +33,12 @@ export function GQLObject(name: string) {
         const types: IGQLObjectDefine[] = Reflect.getMetadata('gql', GQLObject) || [];
         types.push({type: target, name: name});
         Reflect.defineMetadata('gql', types, GQLObject);
+    }
+}
+
+export function GQLObjectSchema(opts: IGQLObjectSchema) {
+    return (target: any) => {
+        Reflect.defineMetadata(`gql:schemas`, opts, target);
     }
 }
 
@@ -47,6 +56,16 @@ export function GQLField(options?: IGQLFieldOptions) {
         const keys: string[] = Reflect.getMetadata('gql:keys', target) || [];
         keys.push(key);
         Reflect.defineMetadata('gql:keys', keys, target);
+    }
+}
+
+export function GQLFieldOptions(options: IGQLFieldOptions) {
+    return (target: any, key: string) => {
+        const type = options.type || (() => GQLU.gqlTypeFromDesignType(Reflect.getMetadata('design:type', target, key)));
+        GQLU.assert(type != null, `${target}: Cannot get type for key ${key}! Try use Functional type`);
+
+        const oldOptions = Reflect.getMetadata(`gql:options`, target, key)
+        Reflect.defineMetadata(`gql:options`, {...oldOptions, ...options}, target, key);
     }
 }
 
@@ -138,4 +157,25 @@ export function GQLMetaResolver(opts: IGQLMetaResolverOptions) {
     return (target: any, key: string, desc: PropertyDescriptor) => {
         defineMetaResolver(target, opts, desc.value);
     }
+}
+
+export function GQLFieldSchema(schema: any, extraSchema?: any) {
+    return GQLFieldOptions({
+        schema,
+        extraSchema
+    })
+}
+
+export function GQLFieldExtraSchema(extraSchema: any) {
+    return GQLFieldOptions({
+        extraSchema
+    })
+}
+
+export function GQLFieldArraySchema(schema: any, extraFields?: object) {
+    return GQLFieldSchema({
+        'type': 'array',
+        'items': schema,
+        ...extraFields
+    })
 }

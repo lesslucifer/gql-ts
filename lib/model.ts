@@ -66,6 +66,12 @@ export interface IGQLModelClass<T, M extends GQLModel<T, M>> {
     DefaultSelect?: any;
 }
 
+export interface IGQLObjectSchema {
+    schema?: object;
+    extraSchema?: object;
+    ref?: string;
+}
+
 export class GQLModel<T, M> {
     static gql: GQL;
 
@@ -172,6 +178,22 @@ export class GQLModel<T, M> {
         
         return meta;
     }
+
+    static openAPISchema(_gql?: GQL) {
+        const gql = _gql ?? this.gql
+        if (!gql) throw new Error('GQL object not found, please add this model into a GQL object (eg: GQLGlobal)')
+
+        const spec = gql.get(this);
+        if (spec.schemas?.schema) return spec.schemas?.schema
+        
+        const reqFields = spec.keys.filter(k => k.options.schemaRequiredFields).map(k => k.key)
+        return {
+            'type': 'object',
+            'properties': GQLU.arrToObj(spec.keys, k => k.key, k => GQLU.gqlOpenAPISchema(gql, k)),
+            ...reqFields.length > 0 && { 'requiredProperties': reqFields },
+            ...spec.schemas?.extraSchema
+        }
+    }
 }
 
 export class GQLModelKeySpec {
@@ -207,6 +229,7 @@ export class GQLModelSpec<T = any, M extends GQLModel<T, M> = GQLModel<T, any>> 
     resolvers: GQLResolverSpec<T>[];
     metaResolvers: GQLMetaResolverSpec[];
     mappers: GQLMapperSpec<T, M>[];
+    schemas?: IGQLObjectSchema
 
     getKey(name: string) {
         return this.keys.find(k => k.key == name);
@@ -251,6 +274,8 @@ export class GQL {
 
         spec.metaResolvers = Reflect.getMetadata('gql:metas', m) || [];
         spec.metaResolvers = _.sortBy(spec.metaResolvers, r => r.opts.priority)
+
+        spec.schemas = Reflect.getMetadata('gql:schemas', m)
 
         this._models.push(spec);
     }

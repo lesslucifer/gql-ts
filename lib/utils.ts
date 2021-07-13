@@ -1,18 +1,18 @@
 import { GQLBaseType, GQLType } from "./declare";
-import { IGQLObjectDefine, GQLObject, GQLQuery } from "./index";
-import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined, isFunction } from "util";
-import { GQLModelKeySpec, GQLModel, GQL } from "./model";
-import { GQLSelect } from "./select";
-import { GQLFieldFilter, GQLFilter } from "./filter";
+import { GQLQuery } from "./index";
+import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined } from "util";
+import { GQLModelKeySpec, GQL } from "./model";
+import { GQLFilter } from "./filter";
 import { AssertionError } from "assert";
-import { ftruncate } from "fs";
+import _ = require('lodash')
 
 export class GQLUnauthorizedQuery extends Error {
 
 }
 
 export class GQLUtils {
-    Parsers = [this._gqlParse]
+    Parsers = [this._gqlParse.bind(this)]
+    OpenAPISchemaParsers = [this._gqlOpenAPISchema.bind(this)]
 
     assert(mustBeTrue, msg = "Error") {
         if (!mustBeTrue) {
@@ -42,6 +42,16 @@ export class GQLUtils {
     //     const types: IGQLObjectDefine[] = Reflect.getMetadata('gql', GQLObject);
     //     return types && (types.find(t => t.name == type) || {type: null}).type;
     // }
+
+    arrToObj<T, V>(arr: T[], keyMap: (t: T, idx: number) => string, valMap: (t: T, idx: number) => V): {[k: string]: V} {
+        if (!arr) return {};
+        const ret = {};
+        for (let i = 0; i < arr.length; ++i) {
+            ret[keyMap(arr[i], i)] = valMap(arr[i], i);
+        }
+        
+        return ret;
+    }
 
     filterObj<V>(obj: Object, predicate: (k?: string, v?: V) => boolean) {
         return Object.keys(obj).filter(k => predicate(k, obj[k])).reduce((o, k) => {
@@ -172,7 +182,7 @@ export class GQLUtils {
 
     gqlParse(gql: GQL, spec: GQLModelKeySpec, value: any) {
         for (const p of this.Parsers) {
-            const val = p.apply(this, [gql, spec, value]);
+            const val = p(gql, spec, value);
             if (val !== undefined) {
                 return val;
             }
@@ -281,6 +291,52 @@ export class GQLUtils {
 
             return true;
         }
+    }
+
+    private _gqlOpenAPISchema(gql: GQL, spec: GQLModelKeySpec) {
+        if (!spec) return undefined;
+
+        if (spec.rawType === GQLBaseType.BOOL) {
+            return {'type': 'boolean'}
+        }
+
+        if (spec.rawType === GQLBaseType.DOUBLE) {
+            return {'type': 'number'}
+        }
+
+        if (spec.rawType === GQLBaseType.INT) {
+            return {'type': 'integer'}
+        }
+
+        if (spec.rawType === GQLBaseType.STRING) {
+            return {'type': 'string'}
+        }
+
+        if (_.isFunction(spec.rawType)) {
+            const model = gql.get(spec.rawType)
+            if (model) return {
+                '$ref': model.schemas?.ref ?? `#/components/schemas/${model.name}`
+            }
+            return undefined
+        }
+
+        // for other cases
+        return undefined;
+    }
+
+    gqlOpenAPISchema(gql: GQL, spec: GQLModelKeySpec) {
+        if (spec.options.schema) return spec.options.schema
+        for (const p of this.OpenAPISchemaParsers) {
+            const val = p(gql, spec);
+            if (val !== undefined) {
+                return {
+                    ...spec.options.extraSchema,
+                    ...val
+                };
+            }
+        }
+
+        return {...spec.options.extraSchema};
     }
 }
 
