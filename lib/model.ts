@@ -320,6 +320,8 @@ export class GQL {
 
         data.$limit = GQLU.parseIntNull(query.$limit);
         data.$offset = GQLU.parseIntNull(query.$offset);
+        data.$page = GQLU.parseIntNull(query.$page);
+        data.$pageSize = GQLU.parseIntNull(query.$pageSize);
 
         data.$meta = (query.$meta && query.$meta.split(',')) || [];
 
