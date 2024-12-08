@@ -54,7 +54,7 @@ describe("Auto Select", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLModel1);
-        expect(() => GQLU.blackListSelect(gqlQuery, 'model2.id' as any)).not.toThrow();
+        expect(() => GQLU.blackListSelect(gqlQuery, 'model2.id')).not.toThrow();
     });
 
     it('should auto-select sub-select fields with autoSelect: true', () => {

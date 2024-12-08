@@ -86,13 +86,13 @@ export function GQLRootResolver() {
     return GQLResolver({priority: 0});
 }
 
-function defineMapper(target: any, opts: IGQLMapperOptions<any, any>, mappingFunc: any) {
-    const mappers: GQLMapperSpec<any, any>[] = Reflect.getMetadata(`gql:mappers`, target) || [];
+function defineMapper(target: any, opts: IGQLMapperOptions<any>, mappingFunc: any) {
+    const mappers: GQLMapperSpec<any>[] = Reflect.getMetadata(`gql:mappers`, target) || [];
     mappers.push(new GQLMapperSpec(mappingFunc, opts || {fields: []}));
     Reflect.defineMetadata(`gql:mappers`, mappers, target);
 }
 
-export function GQLMapper(opts?: IGQLMapperOptions) {
+export function GQLMapper(opts?: IGQLMapperOptions<any>) {
     return (target: any, key: string, desc: PropertyDescriptor) => {
         defineMapper(target, opts, desc.value);
     }
@@ -101,7 +101,7 @@ export function GQLMapper(opts?: IGQLMapperOptions) {
 export function GQLIdenticalMapping(dataName?: string) {
     return (target: any, key: string) => {
         const rawKey = dataName || key;
-        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery, models: any[]) => {
+        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery<any>, models: any[]) => {
             models.forEach(m => {
                 m[key] = m.raw[rawKey];
             });
@@ -123,7 +123,7 @@ export interface IGQLFieldRevMappingOpts<M1, M2> {
 
 export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
     return (target: any, key: string) => {
-        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery, models: any[]) => {
+        defineMapper(target.constructor, {fields: [key]}, async (query: GQLQuery<any>, models: any[]) => {
             const spec = query.gql.get(target.constructor);
             const field = key;
             const fieldSpec = spec.getKey(field);

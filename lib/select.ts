@@ -1,10 +1,10 @@
 import { isFunction, isObject } from 'lodash';
-import { GQLType } from "./declare";
+import { GQLModelDataType, GQLType } from "./declare";
 import { GQLQuery } from "./index";
 import { GQL, GQLModel, GQLModelKeySpec, IGQLModelClass } from './model';
 
-export class GQLFieldSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
-    constructor(gql: GQL, target: IGQLModelClass<T, M>, field: keyof M, data: any) {
+export class GQLFieldSelect<M extends GQLModel<any, any>> {
+    constructor(gql: GQL, target: IGQLModelClass<GQLModelDataType<M>, M>, field: keyof M, data: any) {
         this.gql = gql;
         this.target = target;
         this.field = field;
@@ -32,20 +32,20 @@ export class GQLFieldSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, an
     }
 
     readonly gql: GQL;
-    readonly target: IGQLModelClass<T, M>;
+    readonly target: IGQLModelClass<GQLModelDataType<M>, M>;
     readonly spec: GQLModelKeySpec;
     readonly field: keyof M;
     readonly type?: GQLType;
-    readonly subQuery?: GQLQuery;
+    readonly subQuery?: GQLQuery<any>;
 }
 
-export class GQLSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export class GQLSelect<M extends GQLModel<any, any>> {
     readonly gql: GQL;
-    readonly target: IGQLModelClass<T, M>;
-    readonly fields: GQLFieldSelect<T, M>[];
-    readonly rawFields: (keyof T)[] = [];
+    readonly target: IGQLModelClass<GQLModelDataType<M>, M>;
+    readonly fields: GQLFieldSelect<M>[];
+    readonly rawFields: (keyof GQLModelDataType<M>)[] = [];
 
-    constructor(gql: GQL, target: IGQLModelClass<T, M>, data: Object)  {
+    constructor(gql: GQL, target: IGQLModelClass<GQLModelDataType<M>, M>, data: Object)  {
         this.gql = gql;
         this.target = target;
         this.fields = [];
@@ -83,7 +83,7 @@ export class GQLSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         return this.fields.find(f => f.field == field);
     }
     
-    add(...fields: (keyof M)[]) {
+    add(...fields: (keyof M | '*')[]) {
         for (const f of fields) {
             if (f === '*') {
                 this.addAllAutoSelectFields();
@@ -105,7 +105,7 @@ export class GQLSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         }
     }
 
-    addRawField(...fields: (keyof T)[]) {
+    addRawField(...fields: (keyof GQLModelDataType<M>)[]) {
         for (const f of fields) {
             if (this.rawFields.find(ff => ff == f) == null) {
                 this.rawFields.push(f);

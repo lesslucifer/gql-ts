@@ -1,7 +1,7 @@
 import "reflect-metadata";
 
 import { GQLQuery, IGQLFieldOptions, GQLMapper } from "./index";
-import { GQLType } from "./declare";
+import { GQLModelDataType, GQLType } from "./declare";
 import { isFunction, isPrimitive, isArray, isObject } from "util";
 import { GQLU } from "./utils";
 import * as _ from 'lodash';
@@ -9,14 +9,14 @@ import { GQLSelect } from "./select";
 import { GQLFilter } from "./filter";
 import { GQLMetaResolverSpec } from "./meta";
 
-export interface IGQLResolver<T>{
-    (query: GQLQuery): Promise<T[]>
+export interface IGQLResolver<M extends GQLModel<any, any>> {
+    (query: GQLQuery<M>): Promise<GQLModelDataType<M>[]>
 }
 
 export interface IGQLResolverOptions<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     priority?: number;
     // fields?: string[];
-    matches?: (filter: GQLFilter<T, M>) => boolean;
+    matches?: (filter: GQLFilter) => boolean;
 }
 
 export class GQLResolverSpec<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
@@ -28,30 +28,30 @@ export class GQLResolverSpec<T = any, M extends GQLModel<T, any> = GQLModel<T, a
         this.opts = opts;
     }
 
-    isMatch(filter: GQLFilter<T, M>) {
+    isMatch(filter: GQLFilter) {
         return !this.opts.matches || this.opts.matches(filter);
     }
 }
 
-export interface IGQLMapper<T, M extends GQLModel<T, M>> {
-    (query: GQLQuery, models: M[]): Promise<M[]>
+export interface IGQLMapper<M extends GQLModel<any, any>> {
+    (query: GQLQuery<M>, models: M[]): Promise<M[]>
 }
 
-export interface IGQLMapperOptions<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export interface IGQLMapperOptions<M extends GQLModel<any, any>> {
     fields?: (keyof M)[];
-    addRawFields?: (keyof T)[];
+    addRawFields?: (keyof GQLModelDataType<M>)[];
 }
 
-export class GQLMapperSpec<T, M extends GQLModel<T, M>> {
-    map: IGQLMapper<T, M>;
-    opts: IGQLMapperOptions<T, M>;
+export class GQLMapperSpec<M extends GQLModel<any, any>> {
+    map: IGQLMapper<M>;
+    opts: IGQLMapperOptions<M>;
 
-    constructor(map: IGQLMapper<T, M>, opts: IGQLMapperOptions<T, M>) {
+    constructor(map: IGQLMapper<M>, opts: IGQLMapperOptions<M>) {
         this.map = map;
         this.opts = opts;
     }
 
-    isMatch(select: GQLSelect<T, M>) {
+    isMatch(select: GQLSelect<M>) {
         return !this.opts.fields || _.intersection(this.opts.fields, select.fields.map(f => f.field)).length > 0;
     }
 }
@@ -60,8 +60,8 @@ export interface IGQLModelClass<T, M extends GQLModel<T, M> = GQLModel<T, any>> 
     gql?: GQL;
     new(): M;
 
-    resolve(query: GQLQuery<T, M>): Promise<M[]>;
-    meta<META = any>(query: GQLQuery<T, M>): Promise<META>;
+    resolve(query: GQLQuery<M>): Promise<M[]>;
+    meta<META = any>(query: GQLQuery<M>): Promise<META>;
 
     DefaultSelect?: any;
 }
@@ -75,10 +75,13 @@ export interface IGQLObjectSchema {
 export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     static gql: GQL;
 
+    constructor() {
+    }
+
     @GQLU.nonenumerable
     raw?: T;
 
-    static async _preResolve<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(query: GQLQuery<T, M>) {
+    static async _preResolve<M extends GQLModel<any, any>>(query: GQLQuery<M>) {
         const gql = this.gql;
         const spec = gql.get(query.target);
 
@@ -91,7 +94,7 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         }
     }
 
-    static async _resolve<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(query: GQLQuery<T, M>): Promise<T[]> {
+    static async _resolve<M extends GQLModel<any, any>>(query: GQLQuery<M>): Promise<GQLModelDataType<M>[]> {
         const gql = this.gql;
         const spec = gql.get(query.target);
         const resolvers = spec.resolvers;
@@ -106,10 +109,10 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
             }
         }
 
-        return [];   
+        return [];
     }
 
-    static async _mapping<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(query: GQLQuery<T, M>, models: M[]): Promise<M[]> { 
+    static async _mapping<M extends GQLModel<any, any>>(query: GQLQuery<M>, models: M[]): Promise<M[]> {
         const gql = this.gql;
         const spec = gql.get(query.target);
         const mappers = spec.mappers;
@@ -118,17 +121,17 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
                 models = await mapper.map.call(query.target, query, models);
             }
         }
-        
+
         return models;
     }
 
-    static async resolve<T = any, M extends GQLModel<T, M> = GQLModel<T, any>>(query: GQLQuery<T, M>): Promise<M[]> {
+    static async resolve<M extends GQLModel<any, any>>(query: GQLQuery<M>): Promise<M[]> {
         await this._preResolve(query);
-        const rawModels = await this._resolve<T, M>(query);
+        const rawModels = await this._resolve<M>(query);
         const gql = this.gql;
-        const spec = gql.get<T, M>(query.target as IGQLModelClass<T, M>);
-        let models = rawModels.map(rm => {
-            const model = new spec.model();
+        const spec = gql.get(query.target);
+        let models: M[] = rawModels.map(rm => {
+            const model: M = new spec.model() as M;
             model.raw = rm;
             return model;
         });
@@ -136,14 +139,14 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         if (models) {
             models = await this._mapping(query, models);
         }
-        
+
         return models;
     }
 
-    static async defaultMapping<T, M extends GQLModel<T, M>>(query: GQLQuery, models: M[]): Promise<M[]> {
+    static async defaultMapping<M extends GQLModel<any, any>>(query: GQLQuery<M>, models: M[]): Promise<M[]> {
         const gql = query.gql;
         const spec = gql.get(query.target)
-        
+
         for (const select of query.select.fields) {
             const keySpec = spec.keys.find(k => k.key == select.field);
             if (!keySpec) {
@@ -161,7 +164,7 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         return models;
     }
 
-    static async meta<META = any>(query: GQLQuery): Promise<META> {
+    static async meta<META = any>(query: GQLQuery<any>): Promise<META> {
         const gql = this.gql;
         const spec = gql.get(query.target);
 
@@ -175,7 +178,7 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
                 meta[field] = data;
             }
         }
-        
+
         return meta as META;
     }
 
@@ -185,7 +188,7 @@ export class GQLModel<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
 
         const spec = gql.get(this as IGQLModelClass<any>);
         if (spec.schemas?.schema) return spec.schemas?.schema
-        
+
         const reqFields = spec.keys.filter(k => k.options.schemaRequiredFields).map(k => k.key)
         return {
             'type': 'object',
@@ -217,7 +220,7 @@ export class GQLModelKeySpec {
         if (raw == Array || raw == Object) {
             return this.options.generic as GQLType;
         }
-        
+
         return raw;
     }
 }
@@ -228,7 +231,7 @@ export class GQLModelSpec<T = any, M extends GQLModel<T, M> = GQLModel<T, any>> 
     keys: GQLModelKeySpec[];
     resolvers: GQLResolverSpec<T, M>[];
     metaResolvers: GQLMetaResolverSpec[];
-    mappers: GQLMapperSpec<T, M>[];
+    mappers: GQLMapperSpec<M>[];
     schemas?: IGQLObjectSchema
 
     getKey(name: string | (keyof M)) {
@@ -249,7 +252,7 @@ export class GQL {
     private _models: GQLModelSpec<any>[] = [];
 
     get<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(arg: string | IGQLModelClass<T, M>): GQLModelSpec<T, M> {
-        return <any> this._models.find(sp => sp.name == arg || (sp.model as any) === arg);
+        return <any>this._models.find(sp => sp.name == arg || (sp.model as any) === arg);
     }
 
     add<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(m: IGQLModelClass<T, M>) {
@@ -266,10 +269,10 @@ export class GQL {
             keySpec.options = Reflect.getMetadata('gql:options', m.prototype, k);
             return keySpec;
         })
-        
+
         spec.resolvers = Reflect.getMetadata('gql:resolvers', m) || [];
         spec.resolvers = _.sortBy(spec.resolvers, r => r.opts.priority)
-        
+
         spec.mappers = [new GQLMapperSpec(GQLModel.defaultMapping, {}), ...Reflect.getMetadata('gql:mappers', m) || []];
 
         spec.metaResolvers = Reflect.getMetadata('gql:metas', m) || [];
@@ -280,12 +283,12 @@ export class GQL {
         this._models.push(spec as GQLModelSpec<any, any>);
     }
 
-    queryFromHttpQuery<T, M extends GQLModel<T, any>>(query: any, type?: new () => M) {
+    queryFromHttpQuery<M extends GQLModel<any, any>>(query: any, type?: new () => M): GQLQuery<M> {
         const data: any = {};
-        
+
         const fields: string[] = query.$fields && query.$fields.split(',');
         fields && fields.forEach(f => _.set(data, f, true));
-        
+
         const filterKeys = _.keys(query).filter(f => !f.startsWith('$'));
         data.$query = {};
         filterKeys.map(k => data.$query[k] = query[k].split(','));
@@ -294,12 +297,12 @@ export class GQL {
         data.$sort = sortData.map(sd => {
             const fieldData = sd.split(':');
             if (fieldData.length == 2) {
-                return {field: fieldData[0], order: fieldData[1]}
+                return { field: fieldData[0], order: fieldData[1] }
             }
 
             return undefined;
         }).filter(sd => sd != null);
-        
+
         const fromData: string[] = (query.$from && query.$from.split(',')) || [];
         data.$from = {};
         fromData.forEach(fd => {
@@ -333,9 +336,11 @@ export class GQL {
             data.$type = query.$type;
         }
 
-        const q = new GQLQuery<T, M>(this, type, data);
+        const q = new GQLQuery(this, type, data) as GQLQuery<M>;
         return q;
     }
 }
+
+type GetModelGenericParams<M> = M extends GQLModel<infer T, infer M> ? [T, M] : never;
 
 export const GQLGlobal = new GQL();

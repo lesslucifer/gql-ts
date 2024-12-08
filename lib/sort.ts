@@ -1,8 +1,9 @@
+import { GQLModelDataType } from './declare';
 import { GQL, GQLModel, IGQLModelClass } from './model';
 
 export type GQLSortOrder = 'ASC' | 'DESC' | any;
 
-export class GQLSortField<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export class GQLSortField<M extends GQLModel<any, any>> {
     field: keyof M;
     order: GQLSortOrder;
 
@@ -12,16 +13,20 @@ export class GQLSortField<T = any, M extends GQLModel<T, any> = GQLModel<T, any>
     }
 
     get OrderNumber() {
+        return this.OrderValue;
+    }
+
+    get OrderValue() {
         return this.order === 'ASC' ? 1 : this.order === 'DESC' ? -1 : this.order;
     }
 }
 
-export class GQLSort<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export class GQLSort<M extends GQLModel<any, any>> {
     readonly gql: GQL;
-    readonly target: IGQLModelClass<T, M>;
-    readonly fields: GQLSortField<T, M>[];
+    readonly target: IGQLModelClass<GQLModelDataType<M>, M>;
+    readonly fields: GQLSortField<M>[];
 
-    constructor(gql: GQL, target: IGQLModelClass<T, M>, fields: any[])  {
+    constructor(gql: GQL, target: IGQLModelClass<GQLModelDataType<M>, M>, fields: any[])  {
         this.gql = gql;
         this.target = target;
         this.fields = (fields || []).map(f => new GQLSortField(f.field, f.order));

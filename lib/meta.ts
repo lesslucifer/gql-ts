@@ -1,7 +1,7 @@
 import { GQLQuery, GQLFilter, GQL, IGQLModelClass } from ".";
 
 export interface IGQLMetaResolver {
-    (query: GQLQuery): Promise<any>
+    (query: GQLQuery<any>): Promise<any>
 }
 
 export interface IGQLMetaResolverOptions {

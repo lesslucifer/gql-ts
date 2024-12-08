@@ -1,30 +1,29 @@
+import { uniq } from "lodash";
 import "reflect-metadata";
-import { Dictionary, uniq } from "lodash";
-import { GQLFieldFilter, GQLFilter } from "./filter";
-import { GQLType, GQL_NONE } from "./declare";
-import { GQLU } from "./utils";
-import { GQLSelect } from "./select";
-import { GQL, GQLModel, IGQLModelClass } from "./model";
-import { GQLSort } from "./sort";
-import { GQLPagination } from "./pagination";
+import { GQLModelDataType, GQLType, GQL_NONE } from "./declare";
+import { GQLFilter } from "./filter";
 import { GQLMetaSelect } from "./meta";
-import { isArray } from "util";
+import { GQL, GQLModel, IGQLModelClass } from "./model";
+import { GQLPagination } from "./pagination";
+import { GQLSelect } from "./select";
+import { GQLSort } from "./sort";
+import { GQLU } from "./utils";
 
 export * from './declare';
-export * from './utils';
-export * from './select';
+export * from './decor';
 export * from './filter';
 export * from './meta';
 export * from './model';
-export * from './sort';
 export * from './pagination';
-export * from './decor';
+export * from './select';
+export * from './sort';
+export * from './utils';
 
 export interface IGQLQueryOptions {
     one?: boolean;
 }
 
-export class GQLQuery<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export class GQLQuery<M extends GQLModel<any, any>> {
     constructor(gql: GQL, data: any);
     constructor(gql: GQL, type: GQLType, data: any);
     constructor(...args: any[]) {
@@ -74,10 +73,10 @@ export class GQLQuery<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     }
 
     readonly gql: GQL;
-    readonly target: IGQLModelClass<T, M>;
-    readonly filter: GQLFilter<T, M>;
-    readonly select: GQLSelect<T, M>;
-    readonly sort: GQLSort<T, M>;
+    readonly target: IGQLModelClass<GQLModelDataType<M>, M>;
+    readonly filter: GQLFilter;
+    readonly select: GQLSelect<M>;
+    readonly sort: GQLSort<M>;
     readonly pagination: GQLPagination;
     readonly meta: GQLMetaSelect;
     readonly options: IGQLQueryOptions;

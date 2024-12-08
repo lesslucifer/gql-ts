@@ -1,15 +1,15 @@
 import { isArray } from "lodash";
 import { GQLModel } from "./model";
 
-export class GQLFieldFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
-    readonly field: keyof M;
+export class GQLFieldFilter {
+    readonly field: string;
     private value: any[];
 
-    static EmptyFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(field: keyof M) {
+    static EmptyFilter(field: string) {
         return new GQLFieldFilter(field, []);
     }
 
-    constructor(field: keyof M, value: any) {
+    constructor(field: string, value: any) {
         this.field = field;
         if (isArray(value)) {
             this.value = value;
@@ -32,19 +32,19 @@ export class GQLFieldFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, an
     }
 }
 
-export class GQLFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+export class GQLFilter {
     constructor(data: Object) {
         for (const f of Object.keys(data || {})) {
             const fieldData = data[f];
-            this.filters.push(new GQLFieldFilter(f as keyof M, fieldData));
+            this.filters.push(new GQLFieldFilter(f, fieldData));
         }
     }
 
-    get(k: keyof M) {
+    get(k: string) {
         return this.filters.find(f => f.field == k) || GQLFieldFilter.EmptyFilter(k);
     }
 
-    add(fielFilter: GQLFieldFilter<T, M>) {
+    add(fielFilter: GQLFieldFilter) {
         const idx = this.filters.findIndex(f => f.field == fielFilter.field);
         if (idx >= 0) {
             this.filters[idx] = fielFilter;
@@ -54,9 +54,9 @@ export class GQLFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
         }
     }
 
-    addFieldFilter(field: keyof M, value: any) {
+    addFieldFilter(field: string, value: any) {
         this.add(new GQLFieldFilter(field, value));
     }
 
-    readonly filters: GQLFieldFilter<T, M>[] = [];
+    readonly filters: GQLFieldFilter[] = [];
 }

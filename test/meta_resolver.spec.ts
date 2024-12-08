@@ -9,12 +9,12 @@ class GQLTestModel extends GQLModel<any, GQLTestModel> {
     name: string;
 
     @GQLRootResolver()
-    static rootResolve(query: GQLQuery) {
+    static rootResolve(query: GQLQuery<GQLTestModel>) {
         return [];
     }
 
     @GQLMetaResolver({field: 'total', matches: GQLU.byFields(['id'], [])})
-    static metaById(query: GQLQuery) {
+    static metaById(query: GQLQuery<GQLTestModel>) {
         return 100;
     }
 }

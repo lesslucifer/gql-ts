@@ -9,7 +9,7 @@ class TestModel extends GQLModel<any, TestModel> {
     name: string;
 
     @GQLRootResolver()
-    static async rootResolver(query: GQLQuery<any, TestModel>) {
+    static async rootResolver(query: GQLQuery<TestModel>) {
         if (query.filter.filters.length > 0) {
             return [];
         }
