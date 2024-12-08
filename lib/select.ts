@@ -1,17 +1,17 @@
-import { isObject, includes, isFunction } from 'lodash';
+import { isFunction, isObject } from 'lodash';
 import { GQLType } from "./declare";
-import { GQLQuery, IGQLFieldOptions } from "./index";
-import { GQL, GQLModelKeySpec, IGQLModelClass } from './model';
+import { GQLQuery } from "./index";
+import { GQL, GQLModel, GQLModelKeySpec, IGQLModelClass } from './model';
 
-export class GQLFieldSelect {
-    constructor(gql: GQL, target: Function, field: string, data: any) {
+export class GQLFieldSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+    constructor(gql: GQL, target: IGQLModelClass<T, M>, field: keyof M, data: any) {
         this.gql = gql;
         this.target = target;
         this.field = field;
 
         const keySpec = gql.get(target).getKey(field)
         if (!keySpec) {
-            throw Error(`Invalid select! Field (${field}) is not defined`);
+            throw Error(`Invalid select! Field (${field as string}) is not defined`);
         }
         this.spec = keySpec;
 
@@ -32,20 +32,20 @@ export class GQLFieldSelect {
     }
 
     readonly gql: GQL;
-    readonly target: Function;
+    readonly target: IGQLModelClass<T, M>;
     readonly spec: GQLModelKeySpec;
-    readonly field: string;
+    readonly field: keyof M;
     readonly type?: GQLType;
     readonly subQuery?: GQLQuery;
 }
 
-export class GQLSelect {
+export class GQLSelect<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     readonly gql: GQL;
-    readonly target: Function;
-    readonly fields: GQLFieldSelect[];
-    readonly rawFields: string[] = [];
+    readonly target: IGQLModelClass<T, M>;
+    readonly fields: GQLFieldSelect<T, M>[];
+    readonly rawFields: (keyof T)[] = [];
 
-    constructor(gql: GQL, target: Function, data: Object)  {
+    constructor(gql: GQL, target: IGQLModelClass<T, M>, data: Object)  {
         this.gql = gql;
         this.target = target;
         this.fields = [];
@@ -57,7 +57,7 @@ export class GQLSelect {
 
             const fieldData = data[f];
             if (fieldData) {
-                this.set(f, data[f], true);
+                this.set(f as keyof M, data[f], true);
             }
         }
     }
@@ -66,7 +66,7 @@ export class GQLSelect {
         const spec = this.gql.get(this.target);
         const autoSelectFields = spec.keys.filter(k => this.isAutoSelectField(k));
         if (autoSelectFields.length > 0) {
-            this.add(...autoSelectFields.map(k => k.key));
+            this.add(...autoSelectFields.map(k => k.key as keyof M));
         }
     }
 
@@ -79,11 +79,11 @@ export class GQLSelect {
         return true;
     }
 
-    get(field: string) {
+    get(field: keyof M) {
         return this.fields.find(f => f.field == field);
     }
     
-    add(...fields: string[]) {
+    add(...fields: (keyof M)[]) {
         for (const f of fields) {
             if (f === '*') {
                 this.addAllAutoSelectFields();
@@ -94,7 +94,7 @@ export class GQLSelect {
         }
     }
 
-    set(field: string, value: any, replace: boolean = true) {
+    set(field: keyof M, value: any, replace: boolean = true) {
         const idx = this.fields.findIndex(ff => ff.field == field);
         const fieldSel = new GQLFieldSelect(this.gql, this.target, field, value)
         if (idx < 0) {
@@ -105,7 +105,7 @@ export class GQLSelect {
         }
     }
 
-    addRawField(...fields: string[]) {
+    addRawField(...fields: (keyof T)[]) {
         for (const f of fields) {
             if (this.rawFields.find(ff => ff == f) == null) {
                 this.rawFields.push(f);

@@ -1,12 +1,4 @@
-import * as _ from 'lodash';
-import { expect } from 'chai';
-import chai = require('chai');
-import chaiAsPromised = require('chai-as-promised');
-import sinon = require('sinon');
-import 'mocha';
 import { GQL, GQLField, GQLObject, GQLU, GQLMetaResolver, GQLQuery, GQLModel, GQLRootResolver } from '../lib';
-
-chai.use(chaiAsPromised);
 
 @GQLObject('test_model')
 class GQLTestModel extends GQLModel<any, GQLTestModel> {
@@ -27,23 +19,15 @@ class GQLTestModel extends GQLModel<any, GQLTestModel> {
     }
 }
 
-describe("# GQLMetaResolver", () => {
-    let sandbox: sinon.SinonSandbox;
-    let gql = new GQL();
+describe("GQLMetaResolver", () => {
+    let gql: GQL;
 
-    before(() => {
+    beforeEach(() => {
+        gql = new GQL();
         gql.add(GQLTestModel);
-    })
+    });
 
-    beforeEach(async () => {
-        sandbox = sinon.createSandbox();
-    })
-
-    afterEach(async () => {
-        sandbox.restore();
-    })
-
-    it('get meta ok', async () => {
+    it('should get meta successfully', async () => {
         const query = {
             $fields: 'id',
             $meta: 'total',
@@ -52,10 +36,10 @@ describe("# GQLMetaResolver", () => {
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
         const meta = await gqlQuery.resolveMeta();
-        expect(meta).include({total: 100});
-    })
+        expect(meta).toEqual(expect.objectContaining({total: 100}));
+    });
 
-    it('get meta not found should be rejected', async () => {
+    it('should reject when meta field not found', async () => {
         const query = {
             $fields: 'id',
             $meta: 'total2',
@@ -63,10 +47,10 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        await expect(gqlQuery.resolveMeta()).to.be.eventually.rejected;
-    })
+        await expect(gqlQuery.resolveMeta()).rejects.toThrow();
+    });
 
-    it('get meta invalid filter should response empty', async () => {
+    it('should return empty object for invalid filter', async () => {
         const query = {
             $fields: 'id',
             $meta: 'total',
@@ -75,10 +59,10 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        expect(await gqlQuery.resolveMeta()).to.eql({});
-    })
+        expect(await gqlQuery.resolveMeta()).toEqual({});
+    });
 
-    it('has meta with meta should be true', async () => {
+    it('should indicate hasMeta when meta is present', () => {
         const query = {
             $fields: 'id',
             $meta: 'total',
@@ -87,10 +71,10 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        expect(gqlQuery.hasMeta).to.be.true;
-    })
+        expect(gqlQuery.hasMeta).toBe(true);
+    });
 
-    it('has meta without meta should be false', async () => {
+    it('should indicate no hasMeta when meta is absent', () => {
         const query = {
             $fields: 'id',
             id: '0',
@@ -98,6 +82,6 @@ describe("# GQLMetaResolver", () => {
         };
 
         const gqlQuery = gql.queryFromHttpQuery(query, GQLTestModel);
-        expect(gqlQuery.hasMeta).to.be.false;
-    })
+        expect(gqlQuery.hasMeta).toBe(false);
+    });
 });

@@ -4,10 +4,11 @@ import { GQLFieldFilter, GQLFilter } from "./filter";
 import { GQLType, GQL_NONE } from "./declare";
 import { GQLU } from "./utils";
 import { GQLSelect } from "./select";
-import { GQL, IGQLModelClass } from "./model";
+import { GQL, GQLModel, IGQLModelClass } from "./model";
 import { GQLSort } from "./sort";
 import { GQLPagination } from "./pagination";
 import { GQLMetaSelect } from "./meta";
+import { isArray } from "util";
 
 export * from './declare';
 export * from './utils';
@@ -19,7 +20,11 @@ export * from './sort';
 export * from './pagination';
 export * from './decor';
 
-export class GQLQuery {
+export interface IGQLQueryOptions {
+    one?: boolean;
+}
+
+export class GQLQuery<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     constructor(gql: GQL, data: any);
     constructor(gql: GQL, type: GQLType, data: any);
     constructor(...args: any[]) {
@@ -31,23 +36,35 @@ export class GQLQuery {
         const selectData = GQLU.select(GQLU.filterObj(data, k => !k.startsWith('$')), this.target.DefaultSelect);
         this.select = new GQLSelect(this.gql, this.target, selectData);
         this.sort = new GQLSort(this.gql, this.target, data.$sort);
-        this.pagination = new GQLPagination(data.$from, data.$to, data.$limit, data.$offset, data.$page, data.$pageSize);
+        this.pagination = new GQLPagination(data.$from, data.$to, data.$limit, data.$offset, data.$page, data.$pageSize, data.$cursor);
         this.meta = new GQLMetaSelect(this.gql, this.target, data.$meta);
+        this.options = {
+            one: data.$options?.one === true
+        };
     }
 
-    resolve<T = any>() {
-        return <Promise<T[]>> this.target.resolve(this);
+    async resolve(): Promise<M | M[]> {
+        return this.options.one ? this.resolveOne() : this.resolveArray();
     }
 
-    resolveMeta() {
-        return this.target.meta(this);
+    async resolveArray(): Promise<M[]> {
+        return await this.target.resolve(this);
+    }
+
+    async resolveOne(): Promise<M> {
+        const data = await this.resolveArray();
+        return data.length > 0 ? data[0] : null;
+    }
+
+    resolveMeta<META = any>() {
+        return this.target.meta<META>(this);
     }
 
     get hasMeta() {
         return this.meta.fields.length > 0;
     }
 
-    emptyQuery<T = any, M = any>(type: IGQLModelClass<T, M>) {
+    emptyQuery<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(type: IGQLModelClass<T, M>) {
         return new GQLQuery(this.gql, type, {});
     }
 
@@ -57,10 +74,11 @@ export class GQLQuery {
     }
 
     readonly gql: GQL;
-    readonly target: IGQLModelClass<any, any>;
-    readonly filter: GQLFilter;
-    readonly select: GQLSelect;
-    readonly sort: GQLSort;
+    readonly target: IGQLModelClass<T, M>;
+    readonly filter: GQLFilter<T, M>;
+    readonly select: GQLSelect<T, M>;
+    readonly sort: GQLSort<T, M>;
     readonly pagination: GQLPagination;
     readonly meta: GQLMetaSelect;
+    readonly options: IGQLQueryOptions;
 }

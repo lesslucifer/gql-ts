@@ -1,15 +1,15 @@
-import { Dictionary, isArray } from "lodash";
-import GQLU from "./utils";
+import { isArray } from "lodash";
+import { GQLModel } from "./model";
 
-export class GQLFieldFilter {
-    readonly field: string;
+export class GQLFieldFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
+    readonly field: keyof M;
     private value: any[];
 
-    static EmptyFilter(field: string) {
+    static EmptyFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>>(field: keyof M) {
         return new GQLFieldFilter(field, []);
     }
 
-    constructor(field: string, value: any) {
+    constructor(field: keyof M, value: any) {
         this.field = field;
         if (isArray(value)) {
             this.value = value;
@@ -32,19 +32,19 @@ export class GQLFieldFilter {
     }
 }
 
-export class GQLFilter {
+export class GQLFilter<T = any, M extends GQLModel<T, any> = GQLModel<T, any>> {
     constructor(data: Object) {
         for (const f of Object.keys(data || {})) {
             const fieldData = data[f];
-            this.filters.push(new GQLFieldFilter(f, fieldData));
+            this.filters.push(new GQLFieldFilter(f as keyof M, fieldData));
         }
     }
 
-    get(k: string) {
+    get(k: keyof M) {
         return this.filters.find(f => f.field == k) || GQLFieldFilter.EmptyFilter(k);
     }
 
-    add(fielFilter: GQLFieldFilter) {
+    add(fielFilter: GQLFieldFilter<T, M>) {
         const idx = this.filters.findIndex(f => f.field == fielFilter.field);
         if (idx >= 0) {
             this.filters[idx] = fielFilter;
@@ -54,5 +54,9 @@ export class GQLFilter {
         }
     }
 
-    readonly filters: GQLFieldFilter[] = [];
+    addFieldFilter(field: keyof M, value: any) {
+        this.add(new GQLFieldFilter(field, value));
+    }
+
+    readonly filters: GQLFieldFilter<T, M>[] = [];
 }

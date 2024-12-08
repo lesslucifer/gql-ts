@@ -1,6 +1,6 @@
-import { GQLQuery, GQLFilter, GQL } from ".";
+import { GQLQuery, GQLFilter, GQL, IGQLModelClass } from ".";
 
-export interface IGQLMetaResolver{
+export interface IGQLMetaResolver {
     (query: GQLQuery): Promise<any>
 }
 
@@ -33,10 +33,10 @@ export function defineMetaResolver(target: any, opts: IGQLMetaResolverOptions, r
 
 export class GQLMetaSelect {
     readonly gql: GQL;
-    readonly target: Function;
+    readonly target: IGQLModelClass<any, any>;
     readonly fields: string[] = [];
 
-    constructor(gql: GQL, target: Function, data: string[])  {
+    constructor(gql: GQL, target: IGQLModelClass<any, any>, data: string[])  {
         this.gql = gql;
         this.target = target;
         this.fields = data;

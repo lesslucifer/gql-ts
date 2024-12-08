@@ -1,14 +1,4 @@
-import * as _ from 'lodash';
-import { expect } from 'chai';
-import chai = require('chai');
-import chaiAsPromised = require('chai-as-promised');
-import sinon = require('sinon');
-import 'mocha';
-import { GQL, GQLField, GQLObject, GQLModel, GQLU, GQLFieldExtraSchema, GQLFieldSchema, GQLFieldArraySchema, GQLObjectSchema } from '../lib';
-import deepEqualInAnyOrder = require('deep-equal-in-any-order');
-
-chai.use(chaiAsPromised);
-chai.use(deepEqualInAnyOrder)
+import { GQL, GQLField, GQLFieldArraySchema, GQLFieldExtraSchema, GQLFieldSchema, GQLModel, GQLObject, GQLObjectSchema } from '../lib';
 
 @GQLObject('user')
 class User extends GQLModel<any, User> {
@@ -114,26 +104,17 @@ class Order extends GQLModel<any, Order> {
 }
 
 describe("# OpenAPI", () => {
-    let sandbox: sinon.SinonSandbox;
     let gql = new GQL();
-    gql.add(User);
-    gql.add(Item);
-    gql.add(Payment);
-    gql.add(Order);
 
-    before(() => {
-    })
-
-    beforeEach(async () => {
-        sandbox = sinon.createSandbox();
-    })
-
-    afterEach(async () => {
-        sandbox.restore();
+    beforeAll(() => {
+        gql.add(User);
+        gql.add(Item);
+        gql.add(Payment);
+        gql.add(Order);
     })
 
     it('field schema', async () => {
-        expect(User.openAPISchema()).to.deep.equalInAnyOrder({
+        expect(User.openAPISchema()).toEqual({
             'type': 'object',
             'properties': {
                 'id': {'type': 'string'},
@@ -172,7 +153,7 @@ describe("# OpenAPI", () => {
     })
 
     it('object schema', async () => {
-        expect(Item.openAPISchema()).to.deep.equalInAnyOrder({
+        expect(Item.openAPISchema()).toEqual({
             'type': 'object',
             'properties': {
                 'id': {'type': 'string'},
@@ -181,7 +162,7 @@ describe("# OpenAPI", () => {
             },
             'additionalProperites': false
         })
-        expect(Payment.openAPISchema()).to.deep.equalInAnyOrder({
+        expect(Payment.openAPISchema()).toEqual({
             'type': 'array',
             'items': {
                 'type': 'string'
@@ -190,7 +171,7 @@ describe("# OpenAPI", () => {
     })
 
     it('ref', async () => {
-        expect(Order.openAPISchema()).to.deep.equalInAnyOrder({
+        expect(Order.openAPISchema()).toEqual({
             'type': 'object',
             'properties': {
                 'id': {'type': 'string'},

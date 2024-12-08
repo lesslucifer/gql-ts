@@ -86,7 +86,7 @@ export function GQLRootResolver() {
     return GQLResolver({priority: 0});
 }
 
-function defineMapper(target: any, opts: IGQLMapperOptions, mappingFunc: any) {
+function defineMapper(target: any, opts: IGQLMapperOptions<any, any>, mappingFunc: any) {
     const mappers: GQLMapperSpec<any, any>[] = Reflect.getMetadata(`gql:mappers`, target) || [];
     mappers.push(new GQLMapperSpec(mappingFunc, opts || {fields: []}));
     Reflect.defineMetadata(`gql:mappers`, mappers, target);
@@ -139,13 +139,13 @@ export function GQLFieldRevMapping(opts: IGQLFieldRevMappingOpts<any, any>) {
                 ((m, tgs: any[]) => m[field] = tgs.filter(t => mappingFilter(m, t))) : 
                 ((m, tgs: any[]) => m[field] = tgs.find(t => mappingFilter(m, t))));
 
-            const select = query.select.get(field);
+            const select = query.select.get(field as any);
             const subQuery = select.subQuery || query.emptyQuery(targetType);
-            subQuery.filter.add(new GQLFieldFilter(queryField, _.flatMap(models, (m => extractor(m)))));
+            subQuery.filter.add(new GQLFieldFilter(queryField as any, _.flatMap(models, (m => extractor(m)))));
             subQuery.select.addRawField(rawField);
             subQuery.pagination.limit = GQLPagination.UNLIMITED;
     
-            const targetModels = await subQuery.resolve();
+            const targetModels = await subQuery.resolveArray();
             
             models.forEach(m => mappingFunc(m, targetModels));
             return models;

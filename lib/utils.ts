@@ -1,4 +1,4 @@
-import { GQLBaseType, GQLType } from "./declare";
+import { DotNotationKeys, GQLBaseType, GQLType } from "./declare";
 import { GQLQuery } from "./index";
 import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined } from "util";
 import { GQLModelKeySpec, GQL } from "./model";
@@ -69,13 +69,13 @@ export class GQLUtils {
 
     isEmpty(obj?: any): boolean
     {
-        return  ((obj == null || obj === NaN || obj === false) ||
+        return  ((obj == null || Number.isNaN(obj) || obj === false) ||
                 (isString(obj) && obj.length == 0) ||
                 ((obj instanceof Array) && obj.length == 0) ||
                 ((obj instanceof Object) && Object.keys(obj).length == 0));
     }
 
-    notEmpty(data: any, isEmpty: (any)  => boolean = this.isEmpty, deep = false) {
+    notEmpty(data: any, isEmpty: (val: any) => boolean = this.isEmpty, deep = false) {
         if (isArray(data)) {
             const filteredData = data.filter(d => !isEmpty(d));
             if (deep) {
@@ -201,54 +201,54 @@ export class GQLUtils {
         return undefined;
     }
 
-    recursiveSelectFields(query: GQLQuery) {
+    recursiveSelectFields<T, M>(query: GQLQuery<T, M>) {
         if (!query) return [];
-        const fields = query.select.fields.filter(f => !f.subQuery).map(f => f.field);
+        const fields: (keyof M | string)[] = query.select.fields.filter(f => !f.subQuery).map(f => f.field);
 
         query.select.fields.filter(f => f.subQuery != null)
         .forEach(f => {
             const subFields = this.recursiveSelectFields(f.subQuery);
             if (this.isEmpty(subFields)) return;
 
-            fields.push(...subFields.map(sf => `${f.field}.${sf}`));
+            fields.push(...subFields.map(sf => `${f.field as string}.${sf}`));
         });
 
         return fields;
     }
 
-    whiteListSelect(query: GQLQuery, ...whiteList: string[]) {
+    whiteListSelect<T, M>(query: GQLQuery<T, M>, ...whiteList: DotNotationKeys<M>[]) {
         const selFields = this.recursiveSelectFields(query);
         const invalidField = selFields.find(f => whiteList.find(wq => wq == f) == null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField})!`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField as string})!`)
         }
     }
 
-    blackListSelect(query: GQLQuery, ...blackList: string[]) {
+    blackListSelect<T, M>(query: GQLQuery<T, M>, ...blackList: DotNotationKeys<M>[]) {
         const selFields = this.recursiveSelectFields(query);
         const invalidField = selFields.find(f => blackList.find(wq => wq == f) != null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField})!`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField as string})!`)
         }
     }
 
-    whiteListFilter(query: GQLQuery, ...whiteList: string[]) {
+    whiteListFilter<T, M>(query: GQLQuery<T, M>, ...whiteList: DotNotationKeys<M>[]) {
         const invalidField = query.filter.filters.find(f => whiteList.find(wq => wq == f.field) == null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot filter field (${invalidField.field})!`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot filter field (${invalidField.field as string})!`)
         }
     }
     
-    blackListFilter(query: GQLQuery, ...blackList: string[]) {
+    blackListFilter<T, M>(query: GQLQuery<T, M>, ...blackList: DotNotationKeys<M>[]) {
         const invalidField = query.filter.filters.find(f => blackList.find(wq => wq == f.field) != null)
         if (invalidField != null) {
-            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field})!`)
+            throw new GQLUnauthorizedQuery(`Unavailable query. Cannot select field (${invalidField.field as string})!`)
         }
     }
 
-    requireFilter(query: GQLQuery, ...requireds: string[]) {
-        const notFoundFilter = requireds.find(r => query.filter.get(r).isEmpty);
-        if (notFoundFilter) throw new GQLUnauthorizedQuery(`Unavailable query. Must have filter (${notFoundFilter})!`)
+    requireFilter<T, M>(query: GQLQuery<T, M>, ...requireds: DotNotationKeys<M>[]) {
+        const notFoundFilter = requireds.find(r => query.filter.get(r as keyof M).isEmpty);
+        if (notFoundFilter) throw new GQLUnauthorizedQuery(`Unavailable query. Must have filter (${notFoundFilter as string})!`)
     }
 
     nonenumerable(target: Object, key: string) {
@@ -276,16 +276,16 @@ export class GQLUtils {
     }
 
     byFields(requiredFields: string[], optionalFields?: string[]) {
-        const allowedFields = new Map();
-        requiredFields.forEach(rf => allowedFields[rf] = true);
-        optionalFields && optionalFields.forEach(optf => allowedFields[optf] = true);
+        const allowedFields = new Map<any, boolean>();
+        requiredFields.forEach(rf => allowedFields.set(rf, true));
+        optionalFields && optionalFields.forEach(optf => allowedFields.set(optf, true));
         return (filter: GQLFilter) => {
             if (requiredFields.find(rf => filter.filters.find(ft => ft.field == rf) == null)) {
                 console.log(requiredFields.find(rf => filter.filters.find(ft => ft.field == rf) == null));
                 return false;
             }
 
-            if (filter.filters.find(ft => allowedFields[ft.field] != true)) {
+            if (filter.filters.find(ft => allowedFields.get(ft.field) != true)) {
                 return false;
             }
 
@@ -313,7 +313,7 @@ export class GQLUtils {
         }
 
         if (_.isFunction(spec.rawType)) {
-            const model = gql.get(spec.rawType)
+            const model = gql.get(spec.rawType as any)
             if (model) return {
                 '$ref': model.schemas?.ref ?? `#/components/schemas/${model.name}`
             }

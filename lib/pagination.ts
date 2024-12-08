@@ -16,13 +16,15 @@ export class GQLPagination {
     offset?: number;
     page?: number;
     pageSize?: number;
+    cursor?: string;
 
-    constructor(from: GQLOffsetData, to?: GQLOffsetData, limit?: number, offest?: number, page?: number, pageSize?: number) {
+    constructor(from: GQLOffsetData, to?: GQLOffsetData, limit?: number, offest?: number, page?: number, pageSize?: number, cursor?: string) {
         this.from = from;
         this.to = to;
         this.limit = limit;
         this.offset = offest;
         this.page = page
         this.pageSize = pageSize
+        this.cursor = cursor
     }
 }
