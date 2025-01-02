@@ -1,10 +1,11 @@
 import { DotNotationKeys, GQLBaseType, GQLType } from "./declare";
 import { GQLQuery } from "./index";
-import { isArray, isObject, isString, isNumber, isBoolean, isNullOrUndefined } from "util";
 import { GQLModelKeySpec, GQL, GQLModel } from "./model";
 import { GQLFilter } from "./filter";
 import { AssertionError } from "assert";
 import _ = require('lodash')
+import { isArray, isBoolean, isNumber, isObject } from "lodash";
+import { isString } from "lodash";
 
 export class GQLUnauthorizedQuery extends Error {
 
@@ -97,7 +98,7 @@ export class GQLUtils {
     }
 
     toBoolean(value: any): boolean {
-        if (isNullOrUndefined(value)) {
+        if (value == null || value == undefined) {
             return false;
         }
 
@@ -126,7 +127,7 @@ export class GQLUtils {
     }
 
     toString(value: any): string {
-        if (isNullOrUndefined(value)) {
+        if (value == null || value == undefined) {
             return null;
         }
 

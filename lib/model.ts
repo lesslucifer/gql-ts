@@ -1,13 +1,12 @@
 import "reflect-metadata";
 
-import { GQLQuery, IGQLFieldOptions, GQLMapper } from "./index";
-import { GQLModelDataType, GQLType } from "./declare";
-import { isFunction, isPrimitive, isArray, isObject } from "util";
-import { GQLU } from "./utils";
 import * as _ from 'lodash';
-import { GQLSelect } from "./select";
+import { GQLModelDataType, GQLType } from "./declare";
 import { GQLFilter } from "./filter";
+import { GQLQuery, IGQLFieldOptions } from "./index";
 import { GQLMetaResolverSpec } from "./meta";
+import { GQLSelect } from "./select";
+import { GQLU } from "./utils";
 
 export interface IGQLResolver<M extends GQLModel<any, any>> {
     (query: GQLQuery<M>): Promise<GQLModelDataType<M>[]>
